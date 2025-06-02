@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>頁面資訊</title>
+    <!-- 加入 Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+    <!-- 導覽列 -->
+    {% include 'navigation.html' %}
+
+    <!-- 主內容 -->
+    <div class="p-6">
+        <h1 class="text-xl font-bold mb-2">目前頁面：{{ current_page_name }}</h1>
+        <p class="mb-1">目前角色：<span class="font-medium">{{ role }}</span></p>
+        <p>這個頁面可以做到的事：</p>
+        <ul class="list-disc pl-6 mt-2">
+            {% for action in actions %}
+                <li>{{ action }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+</body>
+</html>

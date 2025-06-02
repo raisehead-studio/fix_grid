@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>帳號管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    async function loadUsers() {
+      const res = await fetch('/api/accounts');
+      const data = await res.json();
+      const tbody = document.getElementById('user-table-body');
+      tbody.innerHTML = '';
+      data.forEach(user => {
+        const row = document.createElement('tr');
+        row.className = "border-b";
+        row.innerHTML = `
+          <td class="p-2">${user.username}</td>
+          <td class="p-2">${user.full_name}</td>
+          <td class="p-2">${user.role_name}</td>
+          <td class="p-2">${user.district_name}</td>
+          <td class="p-2">${user.village_name}</td>
+          <td class="p-2">
+            ${user.role_name === "超級管理員" ? "" : `<span class="text-red-500 hover:underline cursor-pointer" onclick="deleteUser(${user.id})">刪除</span>`}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm("確定要刪除這個帳號？")) return;
+      await fetch(`/api/delete_account/${userId}`, { method: 'DELETE' });
+      loadUsers();
+    }
+
+    async function loadFormOptions() {
+      const [roles, districts] = await Promise.all([
+        fetch('/api/roles').then(res => res.json()),
+        fetch('/api/districts').then(res => res.json())
+      ]);
+      const roleSelect = document.getElementById('new-role');
+      const districtSelect = document.getElementById('new-district');
+      roles.forEach(r => roleSelect.innerHTML += `<option value="${r.id}">${r.name}</option>`);
+      districts.forEach(d => districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    }
+
+    async function loadVillages(districtId) {
+      const res = await fetch(`/api/villages/${districtId}`);
+      const villages = await res.json();
+      const villageSelect = document.getElementById('new-village');
+      villageSelect.innerHTML = '';
+      villages.forEach(v => villageSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`);
+    }
+
+    async function createUser() {
+      const payload = {
+        username: document.getElementById('new-username').value,
+        password: document.getElementById('new-password').value,
+        full_name: document.getElementById('new-full-name').value,
+        phone: document.getElementById('new-phone').value,
+        role_id: parseInt(document.getElementById('new-role').value),
+        district_id: parseInt(document.getElementById('new-district').value),
+        village_id: parseInt(document.getElementById('new-village').value)
+      };
+      await fetch('/api/create_account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      document.getElementById('createModal').classList.add('hidden');
+      loadUsers();
+    }
+
+    window.onload = () => {
+      loadUsers();
+      loadFormOptions();
+      document.getElementById('new-district').addEventListener('change', e => loadVillages(e.target.value));
+    };
+
+    function closeModalOnOutsideClick(event) {
+      const modal = document.getElementById('createModal');
+      modal.classList.add('hidden');
+    }
+  </script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-6">
+    <h1 class="text-2xl font-bold mb-4">帳號管理</h1>
+    <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+            class="mb-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">新增帳號</button>
+    <table class="table-auto w-full bg-white shadow rounded">
+      <thead>
+        <tr class="bg-gray-200 text-left">
+          <th class="p-2">帳號</th>
+          <th class="p-2">姓名</th>
+          <th class="p-2">角色</th>
+          <th class="p-2">區</th>
+          <th class="p-2">里</th>
+          <th class="p-2">操作</th>
+        </tr>
+      </thead>
+      <tbody id="user-table-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Modal -->
+  <div id="createModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center hidden"
+    onclick="closeModalOnOutsideClick(event)">
+    <div class="bg-white p-6 rounded shadow-lg w-[400px] space-y-4" onclick="event.stopPropagation()">
+      <h2 class="text-xl font-bold">新增帳號</h2>
+      <input id="new-username" class="w-full p-2 border rounded" placeholder="帳號">
+      <input id="new-password" class="w-full p-2 border rounded" placeholder="密碼" type="password">
+      <input id="new-full-name" class="w-full p-2 border rounded" placeholder="姓名">
+      <input id="new-phone" class="w-full p-2 border rounded" placeholder="電話">
+      <select id="new-role" class="w-full p-2 border rounded"><option value="">角色</option></select>
+      <select id="new-district" class="w-full p-2 border rounded"><option value="">區</option></select>
+      <select id="new-village" class="w-full p-2 border rounded"><option value="">里</option></select>
+      <div class="flex justify-end space-x-2">
+        <button onclick="document.getElementById('createModal').classList.add('hidden')"
+                class="px-4 py-1 bg-gray-300 rounded">取消</button>
+        <button onclick="createUser()" class="px-4 py-1 bg-green-600 text-white rounded">建立</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

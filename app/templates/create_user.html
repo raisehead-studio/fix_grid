@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create User</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    function generatePassword() {
+      const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
+      let pass = "";
+      for (let i = 0; i < 10; i++) {
+        pass += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      document.getElementById('password').value = pass;
+    }
+
+    function fetchVillages() {
+      const district = document.getElementById('district').value;
+      fetch('/api/villages?district=' + encodeURIComponent(district))
+        .then(res => res.json())
+        .then(data => {
+          const villageSelect = document.getElementById('village');
+          villageSelect.innerHTML = '';
+          data.villages.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = name;
+            villageSelect.appendChild(opt);
+          });
+        });
+    }
+  </script>
+</head>
+<body class="p-8 bg-gray-100">
+  <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-2xl mb-4">Create Account</h2>
+    <form method="POST" action="{{ url_for('create_user') }}">
+      <label>Username</label>
+      <input name="username" required class="w-full border p-2 mb-4">
+
+      <label>Password</label>
+      <div class="flex mb-4">
+        <input id="password" name="password" required class="w-full border p-2">
+        <button type="button" onclick="generatePassword()" class="ml-2 bg-gray-300 px-4 py-2 rounded">Generate</button>
+      </div>
+
+      <label>Full Name</label>
+      <input name="full_name" required class="w-full border p-2 mb-4">
+
+      <label>Phone</label>
+      <input name="phone" class="w-full border p-2 mb-4">
+
+      <label>Role</label>
+      <select name="role_id" class="w-full border p-2 mb-4">
+        {% for role in roles %}
+          <option value="{{ role.id }}">{{ role.name }}</option>
+        {% endfor %}
+      </select>
+
+      <label>District</label>
+      <select id="district" name="district" class="w-full border p-2 mb-4" onchange="fetchVillages()">
+        {% for d in districts %}
+          <option value="{{ d }}">{{ d }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Village</label>
+      <select id="village" name="village" class="w-full border p-2 mb-4"></select>
+
+      <button class="bg-blue-500 text-white px-4 py-2">Create</button>
+    </form>
+  </div>
+</body>
+</html>
