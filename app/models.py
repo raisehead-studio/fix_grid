@@ -7,7 +7,7 @@ def get_user_by_username(username):
     cursor.execute("""
         SELECT 
             users.id, users.username, users.password, users.full_name, 
-            users.phone, districts.name, villages.name, users.role_id, 
+            users.phone, users.district_id, districts.name, villages.name, users.role_id, 
             roles.name AS role_name
         FROM users
         LEFT JOIN roles ON users.role_id = roles.id
@@ -26,10 +26,11 @@ def get_user_by_username(username):
             'password': row[2],
             'full_name': row[3],
             'phone': row[4],
-            'district': row[5],
-            'village': row[6],
-            'role_id': row[7],
-            'role_name': row[8]
+            'district_id': row[5],
+            'district': row[6],
+            'village': row[7],
+            'role_id': row[8],
+            'role_name': row[9]
         }
     return None
 
@@ -37,9 +38,13 @@ def get_user_by_id_with_role(user_id):
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT users.id, users.username, users.role_id, roles.name AS role_name, users.full_name
+        SELECT users.id, users.username, users.password, users.full_name, 
+            users.phone, users.district_id, districts.name, villages.name, users.role_id, 
+            roles.name AS role_name
         FROM users
-        JOIN roles ON users.role_id = roles.id
+        LEFT JOIN roles ON users.role_id = roles.id
+        LEFT JOIN districts ON users.district_id = districts.id
+        LEFT JOIN villages ON users.village_id = villages.id
         WHERE users.id = ?
     """, (user_id,))
     row = cursor.fetchone()
@@ -49,9 +54,14 @@ def get_user_by_id_with_role(user_id):
         return {
             'id': row[0],
             'username': row[1],
-            'role_id': row[2],
-            'role_name': row[3],
-            'full_name': row[4]
+            'password': row[2],
+            'full_name': row[3],
+            'phone': row[4],
+            'district_id': row[5],
+            'district': row[6],
+            'village': row[7],
+            'role_id': row[8],
+            'role_name': row[9]
         }
     return None
 

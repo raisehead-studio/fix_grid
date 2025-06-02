@@ -11,6 +11,7 @@ from .utils import page_name_map
 # routes
 from .role_routes import role_bp
 from .account_routes import account_bp
+from .power_routes import power_bp
 
 login_manager = LoginManager()
 
@@ -22,20 +23,28 @@ def create_app():
     login_manager.login_view = 'login'
     app.register_blueprint(role_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(power_bp)
 
     class User(UserMixin):
-        def __init__(self, id, username, role_id, role_name, full_name):
+        def __init__(self, id, username, full_name, phone, district_id, district, village, role_id, role_name):
             self.id = id
             self.username = username
+            self.full_name = full_name
+            self.phone = phone
+            self.district_id = district_id
+            self.district = district
+            self.village = village
             self.role_id = role_id
             self.role_name = role_name
-            self.full_name = full_name
 
     @login_manager.user_loader
     def load_user(user_id):
         user = get_user_by_id_with_role(user_id)
         if user:
-            return User(user['id'], user['username'], user['role_id'], user['role_name'], user['full_name'])
+            return User(
+                user['id'], user['username'], user['full_name'], user['phone'],
+                user['district_id'], user['district'], user['village'], user['role_id'], user['role_name']
+            )
         return None
 
     @app.route('/', methods=['GET', 'POST'])
@@ -46,7 +55,10 @@ def create_app():
             user = get_user_by_username(username)
             print(user)
             if user and check_password_hash(user['password'], password):
-                login_user(User(user['id'], user['username'], user['role_id'], user['role_name'], user['full_name']))
+                login_user(User(
+                    user['id'], user['username'], user['full_name'], user['phone'],
+                    user['district_id'], user['district'], user['village'], user['role_id'], user['role_name']
+                ))
                 return redirect(url_for('page_info', page='profile'))
             else:
                 flash("Invalid credentials", "danger")
@@ -93,7 +105,8 @@ def create_app():
             "current_page_name": page_name_map.get(page, page),
             "actions": actions,
             "pages": role_pages,
-            "page_name_map": page_name_map
+            "page_name_map": page_name_map,
+            "user_permissions": actions  # 傳入模板供判斷權限
         }
 
         # 預設檢查該頁面是否有對應模板

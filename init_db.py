@@ -1,6 +1,7 @@
 import sqlite3
 from init_districts import init_districts
 from init_permissions import init_permissions
+from init_dbs import execute_sql_file
 
 conn = sqlite3.connect("kao_power_water.db")
 cursor = conn.cursor()
@@ -99,6 +100,7 @@ cursor.executemany("INSERT INTO permissions (page, permission) VALUES (?, ?)", p
 
 init_districts(conn, cursor)
 init_permissions(conn, cursor)
+execute_sql_file(conn, cursor, 'db/power_reports.sql')
 
 conn.commit()
 conn.close()
