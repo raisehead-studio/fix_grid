@@ -28,6 +28,42 @@
     <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
     {% endif %}
   </div>
+
+  <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
+    <!-- 排序 -->
+    <div>
+      <label class="font-medium mr-2">排序依據：</label>
+      <select id="sortField" class="border p-1 rounded">
+        <option value="">無排序</option>
+        <option value="id">序號</option>
+        <option value="district">行政區</option>
+        <option value="village">里</option>
+        <option value="created_at">通報時間</option>
+      </select>
+      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
+    </div>
+
+    <!-- 篩選 -->
+    <div>
+      <label class="font-medium mr-2">行政區：</label>
+      <select id="filterDistrict" class="border p-1 rounded">
+      </select>
+    </div>
+    <div>
+      <label class="font-medium mr-2">里：</label>
+      <select id="filterVillage" class="border p-1 rounded">
+      </select>
+    </div>
+    <div>
+      <label class="ml-4">
+        <input type="checkbox" id="filterMismatch" class="mr-1">
+        左右狀態不一致
+      </label>
+    </div>
+    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+  </div>
+
   <div class="grid grid-cols-5 gap-4">
     <!-- 左：回報表格 -->
     <div class="col-span-3 bg-white shadow rounded p-4">

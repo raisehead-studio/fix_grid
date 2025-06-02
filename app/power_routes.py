@@ -24,10 +24,11 @@ def get_power_reports():
         ORDER BY po.created_at
     """)
     rows = cursor.fetchall()
-    print(rows)
     data = [dict(
         id=row[0],
+        district_id=row[1],
         district=row[-2],
+        village_id=row[2],
         village=row[-1],
         location=row[3],
         reason=row[4],

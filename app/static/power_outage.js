@@ -1,4 +1,3 @@
-console.log(userPermissions)
 function openReportModal() {
   document.getElementById('reportModal').classList.remove('hidden');
 
@@ -54,7 +53,39 @@ let power_data = {};
 
 async function fetchReports() {
   const res = await fetch('/api/power_reports');
-  const data = await res.json();
+  let data = await res.json();
+
+  // 取得排序與篩選設定
+  const selectedSortField = document.getElementById('sortField').value;
+  const selectedDistrict = document.getElementById('filterDistrict').value;
+  const selectedVillage = document.getElementById('filterVillage').value;
+  const mismatchOnly = document.getElementById('filterMismatch').checked;
+
+  // 篩選處理
+  if (selectedDistrict && selectedDistrict != "") {
+    data = data.filter(e => e.district_id == selectedDistrict);
+  }
+  if (selectedVillage && selectedVillage != "") {
+    data = data.filter(e => e.village_id == selectedVillage);
+  }
+  if (mismatchOnly) {
+    data = data.filter(e => e.report_status !== e.taipower_status);
+  }
+
+  // 排序處理
+  if (selectedSortField) {
+    data.sort((a, b) => {
+      let aVal = a[selectedSortField];
+      let bVal = b[selectedSortField];
+
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
 
   const reportBody = document.getElementById('report-table-body');
   const taipowerBody = document.getElementById('taipower-table-body');
@@ -241,4 +272,42 @@ function checkModalClick(event, modalId) {
   if (event.target === modal) {
     modal.classList.add("hidden");
   }
+}
+
+window.onload = async () => {
+  loadFilterDistricts()
+}
+
+async function loadFilterDistricts() {
+  const districts = await fetch('/api/districts').then(res => res.json());
+  const districtSelect = document.getElementById('filterDistrict');
+  districtSelect.innerHTML = `<option value="">全部</option>`
+  districts.forEach(d => districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+  document.getElementById('filterDistrict').addEventListener('change', e => loadFilterVillages(e.target.value));
+}
+
+async function loadFilterVillages(districtId) {
+  const res = await fetch(`/api/villages/${districtId}`);
+  const villages = await res.json();
+  const villageSelect = document.getElementById('filterVillage');
+  villageSelect.innerHTML = '<option value="">全部</option>';
+  villages.forEach(v => villageSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`);
+}
+
+let sortField = '';
+let sortOrder = 'asc';
+
+function toggleSortOrder() {
+  sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+  document.getElementById('sortOrderBtn').innerText = sortOrder === 'asc' ? '升序 ⬆️' : '降序 ⬇️';
+}
+
+function clearFilters() {
+  document.getElementById('sortField').value = '';
+  document.getElementById('filterDistrict').value = '';
+  document.getElementById('filterVillage').innerHTML = '<option value="">全部</option>';
+  document.getElementById('filterMismatch').checked = false;
+  document.getElementById('sortOrderBtn').innerText = '升序 ⬆️';
+  sortAscending = true;
+  fetchReports();
 }

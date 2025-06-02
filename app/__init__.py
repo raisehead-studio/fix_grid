@@ -53,7 +53,6 @@ def create_app():
             username = request.form['username']
             password = request.form['password']
             user = get_user_by_username(username)
-            print(user)
             if user and check_password_hash(user['password'], password):
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
@@ -67,7 +66,6 @@ def create_app():
     @app.route('/dashboard')
     @login_required
     def dashboard():
-        print(current_user.role_name)
         return f"Hello {current_user.full_name}, you're logged in with role name {current_user.role_name}."
 
     @app.route('/logout')
