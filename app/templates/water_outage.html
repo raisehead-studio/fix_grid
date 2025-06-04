@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>停水彙整表</title>
+  <script>
+    const currentUser = {{ {
+      "id": current_user.id,
+      "username": current_user.username,
+      "full_name": current_user.full_name,
+      "role_id": current_user.role_id,
+      "role_name": current_user.role_name,
+      "district_id": current_user.district_id,
+      "district": current_user.district,
+      "village": current_user.village,
+      "phone": current_user.phone
+    } | tojson }};
+    const userPermissions = {{ user_permissions | tojson }};
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../static/water_outage.js"></script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-4 flex justify-between">
+    <h2 class="text-xl font-bold">停水彙整表</h2>
+    {% if 'create_report' in user_permissions %}
+    <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
+    <!-- 排序 -->
+    <div>
+      <label class="font-medium mr-2">排序依據：</label>
+      <select id="sortField" class="border p-1 rounded">
+        <option value="">無排序</option>
+        <option value="id">序號</option>
+        <option value="district">行政區</option>
+        <option value="village">里</option>
+        <option value="created_at">通報時間</option>
+      </select>
+      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
+    </div>
+
+    <!-- 篩選 -->
+    <div>
+      <label class="font-medium mr-2">行政區：</label>
+      <select id="filterDistrict" class="border p-1 rounded">
+      </select>
+    </div>
+    <div>
+      <label class="font-medium mr-2">里：</label>
+      <select id="filterVillage" class="border p-1 rounded">
+      </select>
+    </div>
+    <div>
+      <label class="ml-4">
+        <input type="checkbox" id="filterMismatch" class="mr-1">
+        左右狀態不一致
+      </label>
+    </div>
+    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+  </div>
+
+  <div class="grid grid-cols-5 gap-4">
+    <!-- 左：回報表格 -->
+    <div class="col-span-3 bg-white shadow rounded p-4">
+      <h3 class="text-lg font-medium">公所回報</h3>
+      <table class="w-full text-sm table-auto">
+        <thead>
+          <tr class="border-b font-semibold text-left">
+            <th>序號</th><th>行政區</th><th>里</th><th>地點</th><th>是否需設加水站</th>
+            <th>聯絡人</th><th>電話</th><th>通報時間</th><th>狀態</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="report-table-body">
+          <!-- 動態資料插入 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 右：台電狀態表格 -->
+    <div class="col-span-2 bg-white shadow rounded p-4">
+      <h3 class="text-lg font-medium">台水填報</h3>
+      <table class="w-full text-sm table-auto">
+        <thead>
+          <tr class="border-b font-semibold text-left">
+            <th>狀態</th><th>回報說明</th><th>預估修復時間</th><th>加水站</th><th>支援內容</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="water-table-body">
+          <!-- 動態資料插入 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 回報 Modal -->
+  <div id="reportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    onclick="checkModalClick(event, 'reportModal')">
+    <div class="bg-white p-6 rounded w-full max-w-xl space-y-4" onclick="event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4">新增停水通報</h2>
+      <form id="reportForm" onsubmit="submitReport(event)">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block">行政區</label>
+            <input id="district" name="district" class="w-full border px-2 py-1 rounded bg-gray-100" disabled>
+          </div>
+          <div>
+            <label class="block">里</label>
+            <select id="village" name="village_id" class="w-full border px-2 py-1 rounded" required></select>
+          </div>
+          <div>
+            <label class="block">地點</label>
+            <input name="location" type="text" class="w-full border px-2 py-1 rounded" required>
+          </div>
+          <div>
+            <label class="block">是否需設加水站</label>
+            <select name="water_station" type="text" class="w-full border px-2 py-1 rounded" required></select>
+          </div>
+          <div>
+            <label class="block">聯絡人</label>
+            <input id="contact_name" name="contact_name" type="text" class="w-full border px-2 py-1 rounded" required>
+          </div>
+          <div>
+            <label class="block">聯絡電話</label>
+            <input id="contact_phone" name="contact_phone" type="text" class="w-full border px-2 py-1 rounded" required>
+          </div>
+        </div>
+        <div class="mt-4 text-right">
+          <button type="button" onclick="closeReportModal()" class="px-4 py-2 bg-gray-300 rounded mr-2">取消</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">送出</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🔧 編輯回報 Modal -->
+  <div id="editReportModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+      onclick="checkModalClick(event, 'editReportModal')">
+    <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4">編輯回報資料</h2>
+      <div class="space-y-3">
+        <input id="edit-location" class="w-full border p-2" placeholder="地點">
+        <select id="edit-water-station" class="w-full border p-2" placeholder="是否需設加水站"></select>
+        <input id="edit-contact" class="w-full border p-2" placeholder="聯絡人">
+        <input id="edit-phone" class="w-full border p-2" placeholder="聯絡電話">
+      </div>
+      <div class="mt-6 flex justify-end gap-4">
+        <button onclick="closeModal('editReportModal')" class="text-gray-600">取消</button>
+        <button onclick="submitEditReport()" class="bg-blue-600 text-white px-4 py-2 rounded">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚡ 回報復水 Modal -->
+  <div id="confirmReportRestoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+      onclick="checkModalClick(event, 'confirmReportRestoreModal')">
+    <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
+      <h2 class="text-lg font-bold text-red-600 mb-4">切換供水狀態</h2>
+      <p id="confirmReportText" class="text-sm text-gray-700 mb-6"></p>
+      <div class="flex justify-end gap-4">
+        <button onclick="closeConfirmReportRestore()" class="text-gray-600">取消</button>
+        <button onclick="submitReportRestore()" class="bg-red-600 text-white px-4 py-2 rounded">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🧰 編輯台電狀態 Modal -->
+  <div id="editStatusModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+      onclick="checkModalClick(event, 'editStatusModal')">
+    <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4">編輯台水狀態</h2>
+      <div class="space-y-3">
+        <textarea id="edit-description" class="w-full border p-2" placeholder="回報說明"></textarea>
+        <input id="edit-estimate-hour" type="number" min="1" class="w-full border p-2" placeholder="預估修復時間（小時）">
+        <select id="edit-water-station-status" class="w-full border p-2" placeholder="加水站"></select>
+        <textarea id="edit-support" class="w-full border p-2" placeholder="支援內容"></textarea>
+      </div>
+      <div class="mt-6 flex justify-end gap-4">
+        <button onclick="closeEditStatusModal()" class="text-gray-600">取消</button>
+        <button onclick="submitEditStatus()" class="bg-blue-600 text-white px-4 py-2 rounded">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚡ 台水復水 Modal -->
+  <div id="confirmStatusRestoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+      onclick="checkModalClick(event, 'confirmStatusRestoreModal')">
+    <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
+      <h2 class="text-lg font-bold text-red-600 mb-4">切換供水狀態</h2>
+      <p id="confirmStatusText" class="text-sm text-gray-700 mb-6"></p>
+      <div class="flex justify-end gap-4">
+        <button onclick="closeConfirmStatusRestore()" class="text-gray-600">取消</button>
+        <button onclick="submitStatusRestore()" class="bg-red-600 text-white px-4 py-2 rounded">確認</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
