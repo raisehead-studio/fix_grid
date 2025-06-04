@@ -101,6 +101,7 @@ cursor.executemany("INSERT INTO permissions (page, permission) VALUES (?, ?)", p
 init_districts(conn, cursor)
 init_permissions(conn, cursor)
 execute_sql_file(conn, cursor, 'db/power_reports.sql')
+execute_sql_file(conn, cursor, 'db/water_reports.sql')
 
 conn.commit()
 conn.close()

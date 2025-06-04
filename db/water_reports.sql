@@ -1,11 +1,10 @@
-DROP TABLE IF EXISTS power_reports;
-CREATE TABLE IF NOT EXISTS power_reports (
+DROP TABLE IF EXISTS water_reports;
+CREATE TABLE IF NOT EXISTS water_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     district_id INTEGER NOT NULL,
     village_id INTEGER NOT NULL,
     location TEXT NOT NULL,
-    reason TEXT NOT NULL,
-    count INTEGER NOT NULL CHECK (count >= 1),
+    water_station TEXT NOT NULL,
     contact_name TEXT NOT NULL,
     contact_phone TEXT NOT NULL,
     created_by INTEGER NOT NULL,
@@ -16,11 +15,12 @@ CREATE TABLE IF NOT EXISTS power_reports (
     report_status BOOLEAN DEFAULT 0,
     report_restored_at DATETIME,
 
-    taipower_status BOOLEAN DEFAULT 0,
-    taipower_restored_at DATETIME,
-    taipower_note TEXT,
-    taipower_eta_hours INTEGER,
-    taipower_support TEXT,
+    taiwater_status BOOLEAN DEFAULT 0,
+    taiwater_restored_at DATETIME,
+    taiwater_note TEXT,
+    taiwater_eta_hours INTEGER,
+    taiwater_water_station_status TEXT,
+    taiwater_support TEXT,
 
     FOREIGN KEY (district_id) REFERENCES districts(id),
     FOREIGN KEY (village_id) REFERENCES villages(id),

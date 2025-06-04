@@ -90,7 +90,7 @@
             <th>狀態</th><th>回報說明</th><th>預估修復時間</th><th>加水站</th><th>支援內容</th><th></th>
           </tr>
         </thead>
-        <tbody id="water-table-body">
+        <tbody id="taiwater-table-body">
           <!-- 動態資料插入 -->
         </tbody>
       </table>
@@ -118,7 +118,11 @@
           </div>
           <div>
             <label class="block">是否需設加水站</label>
-            <select name="water_station" type="text" class="w-full border px-2 py-1 rounded" required></select>
+            <select name="water_station" class="w-full border px-2 py-1 rounded" required>
+              <option value="">請選擇</option>
+              <option value="是">是</option>
+              <option value="否">否</option>
+            </select>
           </div>
           <div>
             <label class="block">聯絡人</label>
@@ -143,10 +147,26 @@
     <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
       <h2 class="text-xl font-bold mb-4">編輯回報資料</h2>
       <div class="space-y-3">
-        <input id="edit-location" class="w-full border p-2" placeholder="地點">
-        <select id="edit-water-station" class="w-full border p-2" placeholder="是否需設加水站"></select>
-        <input id="edit-contact" class="w-full border p-2" placeholder="聯絡人">
-        <input id="edit-phone" class="w-full border p-2" placeholder="聯絡電話">
+        <div>
+          <label for="edit-location" class="block">地點</label>
+          <input id="edit-location" class="w-full border p-2" />
+        </div>
+        <div>
+          <label for="edit-water-station" class="block">是否需設加水站</label>
+          <select id="edit-water-station" class="w-full border p-2">
+            <option value="">請選擇</option>
+            <option value="是">是</option>
+            <option value="否">否</option>
+          </select>
+        </div>
+        <div>
+          <label for="edit-contact" class="block">聯絡人</label>
+          <input id="edit-contact" class="w-full border p-2" />
+        </div>
+        <div>
+          <label for="edit-phone" class="block">聯絡電話</label>
+          <input id="edit-phone" class="w-full border p-2" />
+        </div>
       </div>
       <div class="mt-6 flex justify-end gap-4">
         <button onclick="closeModal('editReportModal')" class="text-gray-600">取消</button>
@@ -174,10 +194,26 @@
     <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
       <h2 class="text-xl font-bold mb-4">編輯台水狀態</h2>
       <div class="space-y-3">
-        <textarea id="edit-description" class="w-full border p-2" placeholder="回報說明"></textarea>
-        <input id="edit-estimate-hour" type="number" min="1" class="w-full border p-2" placeholder="預估修復時間（小時）">
-        <select id="edit-water-station-status" class="w-full border p-2" placeholder="加水站"></select>
-        <textarea id="edit-support" class="w-full border p-2" placeholder="支援內容"></textarea>
+        <div>
+          <label for="edit-description" class="block">回報說明</label>
+          <textarea id="edit-description" class="w-full border p-2"></textarea>
+        </div>
+        <div>
+          <label for="edit-estimate-hour" class="block">預估修復時間（小時）</label>
+          <input id="edit-estimate-hour" type="number" min="1" class="w-full border p-2" />
+        </div>
+        <div>
+          <label for="edit-water-station-status" class="block">加水站</label>
+          <select id="edit-water-station-status" class="w-full border p-2">
+            <option value="">請選擇</option>
+            <option value="是">已新增</option>
+            <option value="否">未新增</option>
+          </select>
+        </div>
+        <div>
+          <label for="edit-support" class="block">支援內容</label>
+          <textarea id="edit-support" class="w-full border p-2"></textarea>
+        </div>
       </div>
       <div class="mt-6 flex justify-end gap-4">
         <button onclick="closeEditStatusModal()" class="text-gray-600">取消</button>
