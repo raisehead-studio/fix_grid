@@ -137,9 +137,9 @@ async function fetchReports() {
       </td>
       <td>${entry.taipower_description || '-'}</td>
       <td>${
-        entry.taipower_estimate_hours
-          ? `<span class="${entry.taipower_estimate_hours > 24 ? 'text-red-600 font-bold' : ''}">
-              ${entry.taipower_estimate_hours} 小時
+        entry.taipower_eta_hours
+          ? `<span class="${entry.taipower_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
+              ${entry.taipower_eta_hours} 小時
             </span>`
           : '-'
       }</td>
@@ -192,7 +192,7 @@ function openEditStatus(entry_id) {
   entry = power_data[entry_id]
   currentEditingStatusId = entry.id;
   document.getElementById('edit-description').value = entry.taipower_description || '';
-  document.getElementById('edit-estimate-hour').value = entry.taipower_estimate_hours || '';
+  document.getElementById('edit-estimate-hour').value = entry.taipower_eta_hours || '';
   document.getElementById('edit-support').value = entry.taipower_support || '';
   document.getElementById('editStatusModal').classList.remove('hidden');
 }

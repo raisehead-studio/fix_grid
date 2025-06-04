@@ -39,7 +39,7 @@ def get_power_reports():
         report_restored_at=row[13],
         taipower_status=row[14],
         taipower_description=row[16],
-        taipower_estimate_hours=row[17],
+        taipower_eta_hours=row[17],
         taipower_support=row[18],
         taipower_restored_at=row[15],
         created_at=row[9]
