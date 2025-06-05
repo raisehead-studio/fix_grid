@@ -92,10 +92,6 @@ async function fetchReports() {
 
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
-  if (canViewStatus) {
-    const taipowerBody = document.getElementById('taipower-table-body');
-    taipowerBody.innerHTML = '';
-  }
 
   data.forEach((entry, index) => {
     power_data[entry.id] = entry
@@ -130,6 +126,11 @@ async function fetchReports() {
 
     // 右表格：台電狀態
     if (canViewStatus) {
+      const canEditStatus = userPermissions.includes("edit_status");
+      const taipowerBody = document.getElementById('taipower-table-body');
+      if (index == 0) {
+        taipowerBody.innerHTML = '';
+      }
       const statusRow = document.createElement('tr');
       statusRow.className = "border-b";
       statusRow.innerHTML = `

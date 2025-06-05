@@ -13,6 +13,7 @@ from .role_routes import role_bp
 from .account_routes import account_bp
 from .power_routes import power_bp
 from .water_routes import water_bp
+from .taiwater_power_routes import taiwater_power_bp
 
 login_manager = LoginManager()
 
@@ -26,6 +27,7 @@ def create_app():
     app.register_blueprint(account_bp)
     app.register_blueprint(power_bp)
     app.register_blueprint(water_bp)
+    app.register_blueprint(taiwater_power_bp)
 
     class User(UserMixin):
         def __init__(self, id, username, full_name, phone, district_id, district, village, role_id, role_name):
