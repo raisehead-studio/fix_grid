@@ -1,8 +1,8 @@
 import sqlite3
 
-from flask import Blueprint, jsonify, request
-from flask_login import login_required
-from werkzeug.security import generate_password_hash
+from flask import Blueprint, jsonify, request, flash, redirect, url_for
+from flask_login import login_required, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
 account_bp = Blueprint('account_bp', __name__)
 
@@ -96,3 +96,59 @@ def create_account():
     conn.commit()
     conn.close()
     return jsonify({'status': 'ok'})
+
+@account_bp.route("/profile", methods=["POST"])
+@login_required
+def profile():
+    user_id = current_user.id
+
+    if request.method == "POST":
+        phone = request.form.get("phone")
+        district_id = request.form.get("district")
+        village_id = request.form.get("village")
+        old_pw = request.form.get("old_password")
+        new_pw = request.form.get("new_password")
+        confirm_pw = request.form.get("confirm_password")
+
+        conn = sqlite3.connect("kao_power_water.db")
+        cursor = conn.cursor()
+
+        # 取得目前密碼 hash
+        cursor.execute("SELECT password FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            flash("找不到使用者", "error")
+            conn.close()
+            return redirect(url_for('page_info', page='profile'))
+
+        current_hashed_pw = row[0]
+
+        # 更新基本資料
+        cursor.execute("""
+            UPDATE users SET phone = ?, district_id = ?, village_id = ?
+            WHERE id = ?
+        """, (phone, district_id, village_id, user_id))
+
+        # 若有密碼欄位，進行驗證與更新
+        if old_pw or new_pw or confirm_pw:
+            if not check_password_hash(current_hashed_pw, old_pw):
+                flash("舊密碼錯誤", "error")
+                conn.close()
+                return redirect(url_for('page_info', page='profile'))
+
+            if new_pw != confirm_pw:
+                flash("新密碼與確認密碼不一致", "error")
+                conn.close()
+                return redirect(url_for('page_info', page='profile'))
+
+            new_hashed_pw = generate_password_hash(new_pw)
+            cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_hashed_pw, user_id))
+            flash("密碼已更新", "success")
+
+        conn.commit()
+        conn.close()
+
+        flash("個人資料已更新", "success")
+        return redirect(url_for('page_info', page='profile'))
+
+    return redirect(url_for('page_info', page='profile'))

@@ -30,13 +30,14 @@ def create_app():
     app.register_blueprint(taiwater_power_bp)
 
     class User(UserMixin):
-        def __init__(self, id, username, full_name, phone, district_id, district, village, role_id, role_name):
+        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name):
             self.id = id
             self.username = username
             self.full_name = full_name
             self.phone = phone
             self.district_id = district_id
             self.district = district
+            self.village_id = village_id
             self.village = village
             self.role_id = role_id
             self.role_name = role_name
@@ -47,7 +48,7 @@ def create_app():
         if user:
             return User(
                 user['id'], user['username'], user['full_name'], user['phone'],
-                user['district_id'], user['district'], user['village'], user['role_id'], user['role_name']
+                user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name']
             )
         return None
 
@@ -60,7 +61,7 @@ def create_app():
             if user and check_password_hash(user['password'], password):
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
-                    user['district_id'], user['district'], user['village'], user['role_id'], user['role_name']
+                    user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name']
                 ))
                 return redirect(url_for('page_info', page='profile'))
             else:
@@ -108,7 +109,8 @@ def create_app():
             "actions": actions,
             "pages": role_pages,
             "page_name_map": page_name_map,
-            "user_permissions": actions  # 傳入模板供判斷權限
+            "user_permissions": actions,
+            "current_user": current_user,
         }
 
         # 預設檢查該頁面是否有對應模板

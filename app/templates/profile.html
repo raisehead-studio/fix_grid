@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>個人資料</title>
+  <script>
+    const currentUser = {{ {
+      "id": current_user.id,
+      "username": current_user.username,
+      "full_name": current_user.full_name,
+      "role_id": current_user.role_id,
+      "role_name": current_user.role_name,
+      "district_id": current_user.district_id,
+      "district": current_user.district,
+      "village": current_user.village,
+      "phone": current_user.phone
+    } | tojson }};
+    const userPermissions = {{ user_permissions | tojson }};
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../static/profile.js"></script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-4 flex justify-between">
+    <h2 class="text-xl font-bold">個人資料</h2>
+  </div>
+  <div class="max-w-xl mx-auto mt-10 bg-white p-6 rounded shadow">
+    <h2 class="text-2xl font-bold flex items-center justify-between">
+      Hello, {{ current_user.full_name }}
+      <button onclick="openEditModal()" class="text-blue-500 hover:text-blue-700">✏️</button>
+    </h2>
+
+    <div class="mt-4 space-y-2">
+      <p><strong>電話：</strong>{{ current_user.phone }}</p>
+      <p><strong>行政區：</strong>{{ current_user.district if current_user.district else '' }}</p>
+      <p><strong>里別：</strong>{{ current_user.village if current_user.village else '' }}</p>
+    </div>
+  </div>
+
+  <!-- 編輯 Modal -->
+  <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <form id="editForm"
+        action="{{ url_for('account_bp.profile') }}"
+        method="POST"
+        class="bg-white p-6 rounded shadow w-full max-w-md space-y-4">
+      <h3 class="text-xl font-bold">修改個人資料</h3>
+
+      <div>
+        <label for="phone" class="block text-sm font-medium mb-1">電話</label>
+        <input id="phone" name="phone" class="w-full border p-2" value="{{ current_user.phone }}" required>
+      </div>
+
+      <div>
+        <label for="district" class="block text-sm font-medium mb-1">行政區</label>
+        <select id="district" name="district" class="w-full border p-2" required></select>
+      </div>
+
+      <div>
+        <label for="village" class="block text-sm font-medium mb-1">里別</label>
+        <select id="village" name="village" class="w-full border p-2" required>
+          <option value="">請先選擇行政區</option>
+        </select>
+      </div>
+
+      <hr class="my-2">
+      <p class="text-gray-600 text-sm">如需修改密碼，請填寫以下欄位：</p>
+
+      <div>
+        <label for="old_password" class="block text-sm font-medium mb-1">舊密碼</label>
+        <input type="password" id="old_password" name="old_password" class="w-full border p-2">
+      </div>
+
+      <div>
+        <label for="new_password" class="block text-sm font-medium mb-1">新密碼</label>
+        <input type="password" id="new_password" name="new_password" class="w-full border p-2">
+      </div>
+
+      <div>
+        <label for="confirm_password" class="block text-sm font-medium mb-1">確認新密碼</label>
+        <input type="password" id="confirm_password" name="confirm_password" class="w-full border p-2">
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button type="button" onclick="closeEditModal()" class="px-4 py-2 border rounded">取消</button>
+        <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">儲存</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const districtSelect = document.querySelector('select[name="district"]');
+  const villageSelect = document.querySelector('select[name="village"]');
+
+  const selectedDistrictId = {{ current_user.district_id or 'null' }};
+  const selectedVillageId = {{ current_user.village_id or 'null' }};
+
+  fetch("/api/districts")
+    .then(res => res.json())
+    .then(data => {
+      districtSelect.innerHTML = '<option value="">請選擇行政區</option>';
+      data.forEach(d => {
+        const option = document.createElement("option");
+        option.value = d.id;
+        option.textContent = d.name;
+        if (selectedDistrictId === d.id) {
+          option.selected = true;
+        }
+        districtSelect.appendChild(option);
+      });
+
+      // 載入該區對應的里，並選定 villageId
+      if (selectedDistrictId !== null) {
+        loadVillages(selectedDistrictId, selectedVillageId);
+      }
+    });
+
+  districtSelect.addEventListener("change", () => {
+    loadVillages(districtSelect.value);
+  });
+
+  function loadVillages(districtId, selectedVillageId = null) {
+    villageSelect.innerHTML = '<option value="">載入中...</option>';
+    fetch(`/api/villages/${districtId}`)
+      .then(res => res.json())
+      .then(data => {
+        villageSelect.innerHTML = '<option value="">請選擇里別</option>';
+        data.forEach(v => {
+          const option = document.createElement("option");
+          option.value = v.id;
+          option.textContent = v.name;
+          if (selectedVillageId && parseInt(selectedVillageId) === v.id) {
+            option.selected = true;
+          }
+          villageSelect.appendChild(option);
+        });
+      });
+  }
+});
+
+function openEditModal() {
+  document.getElementById("editModal").classList.remove("hidden");
+}
+function closeEditModal() {
+  document.getElementById("editModal").classList.add("hidden");
+}
+</script>
+{% endblock %}
