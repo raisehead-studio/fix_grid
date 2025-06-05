@@ -1,7 +1,7 @@
 import sqlite3
 from init_districts import init_districts
 from init_permissions import init_permissions
-from init_dbs import execute_sql_file
+from init_data import execute_sql_file
 
 conn = sqlite3.connect("kao_power_water.db")
 cursor = conn.cursor()
@@ -81,14 +81,17 @@ permissions = [
     ('power_outage', 'view'),
     ('power_outage', 'create_report'),
     ('power_outage', 'edit_report'),
+    ('power_outage', 'view_status'),
     ('power_outage', 'edit_status'),
     ('water_outage', 'view'),
     ('water_outage', 'create_report'),
     ('water_outage', 'edit_report'),
+    ('water_outage', 'view_status'),
     ('water_outage', 'edit_status'),
     ('taiwater_power_outage', 'view'),
     ('taiwater_power_outage', 'create_report'),
     ('taiwater_power_outage', 'edit_report'),
+    ('taiwater_power_outage', 'view_status'),
     ('taiwater_power_outage', 'edit_status'),
     ('taiwater_disaster', 'view'),
     ('taiwater_disaster', 'edit'),
@@ -102,6 +105,7 @@ init_districts(conn, cursor)
 init_permissions(conn, cursor)
 execute_sql_file(conn, cursor, 'db/power_reports.sql')
 execute_sql_file(conn, cursor, 'db/water_reports.sql')
+execute_sql_file(conn, cursor, 'db/init_data.sql')
 
 conn.commit()
 conn.close()

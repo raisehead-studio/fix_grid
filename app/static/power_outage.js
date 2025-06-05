@@ -53,13 +53,13 @@ let power_data = {};
 
 async function fetchReports() {
   const res = await fetch('/api/power_reports');
+  const canViewStatus = userPermissions.includes("view_status");
   let data = await res.json();
 
   // 取得排序與篩選設定
   const selectedSortField = document.getElementById('sortField').value;
   const selectedDistrict = document.getElementById('filterDistrict').value;
   const selectedVillage = document.getElementById('filterVillage').value;
-  const mismatchOnly = document.getElementById('filterMismatch').checked;
 
   // 篩選處理
   if (selectedDistrict && selectedDistrict != "") {
@@ -68,8 +68,11 @@ async function fetchReports() {
   if (selectedVillage && selectedVillage != "") {
     data = data.filter(e => e.village_id == selectedVillage);
   }
-  if (mismatchOnly) {
-    data = data.filter(e => e.report_status !== e.taipower_status);
+  if (canViewStatus) {
+    const mismatchOnly = document.getElementById('filterMismatch').checked;
+    if (mismatchOnly) {
+      data = data.filter(e => e.report_status !== e.taipower_status);
+    }
   }
 
   // 排序處理
@@ -88,9 +91,11 @@ async function fetchReports() {
   }
 
   const reportBody = document.getElementById('report-table-body');
-  const taipowerBody = document.getElementById('taipower-table-body');
   reportBody.innerHTML = '';
-  taipowerBody.innerHTML = '';
+  if (canViewStatus) {
+    const taipowerBody = document.getElementById('taipower-table-body');
+    taipowerBody.innerHTML = '';
+  }
 
   data.forEach((entry, index) => {
     power_data[entry.id] = entry
@@ -124,33 +129,34 @@ async function fetchReports() {
     reportBody.appendChild(reportRow);
 
     // 右表格：台電狀態
-    const statusRow = document.createElement('tr');
-    const canEditStatus = userPermissions.includes("edit_status");
-    statusRow.className = "border-b";
-    statusRow.innerHTML = `
-      <td>
-        ${entry.taipower_status 
-          ? '<span class="text-green-600">已復電</span>' 
-          : (canEditStatus 
-              ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline">未復電</button>` 
-              : '<span class="text-red-600">未復電</span>')}
-      </td>
-      <td>${entry.taipower_description || '-'}</td>
-      <td>${
-        entry.taipower_eta_hours
-          ? `<span class="${entry.taipower_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
-              ${entry.taipower_eta_hours} 小時
-            </span>`
-          : '-'
-      }</td>
-      <td>${entry.taipower_support || '-'}</td>
-      <td>
-        ${!entry.taipower_status && canEditStatus 
-          ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
-          : ''}
-      </td>
-    `;
-    taipowerBody.appendChild(statusRow);
+    if (canViewStatus) {
+      const statusRow = document.createElement('tr');
+      statusRow.className = "border-b";
+      statusRow.innerHTML = `
+        <td>
+          ${entry.taipower_status 
+            ? '<span class="text-green-600">已復電</span>' 
+            : (canEditStatus 
+                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline">未復電</button>` 
+                : '<span class="text-red-600">未復電</span>')}
+        </td>
+        <td>${entry.taipower_description || '-'}</td>
+        <td>${
+          entry.taipower_eta_hours
+            ? `<span class="${entry.taipower_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
+                ${entry.taipower_eta_hours} 小時
+              </span>`
+            : '-'
+        }</td>
+        <td>${entry.taipower_support || '-'}</td>
+        <td>
+          ${!entry.taipower_status && canEditStatus 
+            ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
+            : ''}
+        </td>
+      `;
+      taipowerBody.appendChild(statusRow);
+    }
   });
 }
 

@@ -53,14 +53,14 @@ let water_data = {};
 
 async function fetchReports() {
   const res = await fetch('/api/water_reports');
+  const canViewStatus = userPermissions.includes("view_status");
   let data = await res.json();
 
   // 取得排序與篩選設定
   const selectedSortField = document.getElementById('sortField').value;
   const selectedDistrict = document.getElementById('filterDistrict').value;
   const selectedVillage = document.getElementById('filterVillage').value;
-  const mismatchOnly = document.getElementById('filterMismatch').checked;
-
+  
   // 篩選處理
   if (selectedDistrict && selectedDistrict != "") {
     data = data.filter(e => e.district_id == selectedDistrict);
@@ -68,8 +68,12 @@ async function fetchReports() {
   if (selectedVillage && selectedVillage != "") {
     data = data.filter(e => e.village_id == selectedVillage);
   }
-  if (mismatchOnly) {
-    data = data.filter(e => e.report_status !== e.taiwater_status);
+
+  if (canViewStatus) {
+    const mismatchOnly = document.getElementById('filterMismatch').checked;
+    if (mismatchOnly) {
+      data = data.filter(e => e.report_status !== e.taiwater_status);
+    }
   }
 
   // 排序處理
@@ -88,9 +92,11 @@ async function fetchReports() {
   }
 
   const reportBody = document.getElementById('report-table-body');
-  const taiwaterBody = document.getElementById('taiwater-table-body');
   reportBody.innerHTML = '';
-  taiwaterBody.innerHTML = '';
+  if (canViewStatus) {
+    const taiwaterBody = document.getElementById('taiwater-table-body');
+    taiwaterBody.innerHTML = '';
+  }
 
   data.forEach((entry, index) => {
     water_data[entry.id] = entry
@@ -123,34 +129,35 @@ async function fetchReports() {
     reportBody.appendChild(reportRow);
 
     // 右表格：台電狀態
-    const statusRow = document.createElement('tr');
-    const canEditStatus = userPermissions.includes("edit_status");
-    statusRow.className = "border-b";
-    statusRow.innerHTML = `
-      <td>
-        ${entry.taiwater_status 
-          ? '<span class="text-green-600">已復水</span>' 
-          : (canEditStatus 
-              ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline">未復水</button>` 
-              : '<span class="text-red-600">未復水</span>')}
-      </td>
-      <td>${entry.taiwater_description || '-'}</td>
-      <td>${
-        entry.taiwater_eta_hours
-          ? `<span class="${entry.taiwater_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
-              ${entry.taiwater_eta_hours} 小時
-            </span>`
-          : '-'
-      }</td>
-      <td>${entry.taiwater_water_station_status === '是' ? '已新增' : '未新增'}</td>
-      <td>${entry.taiwater_support || '-'}</td>
-      <td>
-        ${!entry.taiwater_status && canEditStatus 
-          ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
-          : ''}
-      </td>
-    `;
-    taiwaterBody.appendChild(statusRow);
+    if (canViewStatus) {
+      const statusRow = document.createElement('tr');
+      statusRow.className = "border-b";
+      statusRow.innerHTML = `
+        <td>
+          ${entry.taiwater_status 
+            ? '<span class="text-green-600">已復水</span>' 
+            : (canEditStatus 
+                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline">未復水</button>` 
+                : '<span class="text-red-600">未復水</span>')}
+        </td>
+        <td>${entry.taiwater_description || '-'}</td>
+        <td>${
+          entry.taiwater_eta_hours
+            ? `<span class="${entry.taiwater_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
+                ${entry.taiwater_eta_hours} 小時
+              </span>`
+            : '-'
+        }</td>
+        <td>${entry.taiwater_water_station_status === '是' ? '已新增' : '未新增'}</td>
+        <td>${entry.taiwater_support || '-'}</td>
+        <td>
+          ${!entry.taiwater_status && canEditStatus 
+            ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
+            : ''}
+        </td>
+      `;
+      taiwaterBody.appendChild(statusRow);
+    }
   });
 }
 
