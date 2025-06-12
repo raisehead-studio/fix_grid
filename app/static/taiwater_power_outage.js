@@ -101,7 +101,7 @@ async function fetchReports() {
               ? `<button onclick="confirmReportRestore(${entry.id})" class="text-red-600 underline">未復電</button>` 
               : '<span class="text-red-600">未復電</span>')}
       </td>
-      <td>
+      <td class="text-center">
         ${!entry.report_status && canEditReport 
           ? `<button onclick="openEditReport(${entry.id})" class="text-blue-600">✏️</button>` 
           : ''}
@@ -135,7 +135,7 @@ async function fetchReports() {
             : '-'
         }</td>
         <td>${entry.taipower_support || '-'}</td>
-        <td>
+        <td class="text-center">
           ${!entry.taipower_status && canEditStatus 
             ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
             : ''}
