@@ -106,6 +106,8 @@ init_permissions(conn, cursor)
 execute_sql_file(conn, cursor, 'db/power_reports.sql')
 execute_sql_file(conn, cursor, 'db/water_reports.sql')
 execute_sql_file(conn, cursor, 'db/taiwater_power_reports.sql')
+execute_sql_file(conn, cursor, 'db/taiwater_disasters.sql')
+
 execute_sql_file(conn, cursor, 'db/init_data.sql')
 
 conn.commit()

@@ -1,4 +1,4 @@
-<ul class="flex gap-4 border-b p-4 bg-white shadow">
+<ul class="sticky top-0 z-50 flex gap-4 border-b p-4 bg-white shadow">
   {% for p, acts in pages.items() %}
     <li>
       <a href="{{ url_for('page_info', page=p) }}"

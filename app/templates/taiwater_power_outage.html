@@ -61,10 +61,10 @@
     {% else %}
     <div class="col-span-5 bg-white shadow rounded p-4">
     {% endif %}
-      <h3 class="text-lg font-medium">公所回報</h3>
+      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所回報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
-          <tr class="border-b font-semibold text-left">
+          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
             <th>序號</th><th>設施名稱</th><th>桿號</th><th>電號</th><th>停電原因</th>
             <th>聯絡人</th><th>電話</th><th>通報時間</th><th>狀態</th><th class="text-center">編輯</th>
           </tr>
@@ -78,10 +78,10 @@
     <!-- 右：台電狀態表格 -->
     {% if 'view_status' in user_permissions %}
     <div class="col-span-2 bg-white shadow rounded p-4">
-      <h3 class="text-lg font-medium">台電填報</h3>
+      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">台電填報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
-          <tr class="border-b font-semibold text-left">
+          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
             <th>狀態</th><th>回報說明</th><th>預估修復時間</th><th>支援內容</th><th class="text-center">編輯</th>
           </tr>
         </thead>

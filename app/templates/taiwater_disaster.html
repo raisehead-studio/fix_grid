@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>台水公司災害通報彙整</title>
+  <script>
+    const currentUser = {{ {
+      "id": current_user.id,
+      "username": current_user.username,
+      "full_name": current_user.full_name,
+      "role_id": current_user.role_id,
+      "role_name": current_user.role_name,
+      "district_id": current_user.district_id,
+      "district": current_user.district,
+      "village": current_user.village,
+      "phone": current_user.phone
+    } | tojson }};
+    const userPermissions = {{ user_permissions | tojson }};
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../static/taiwater_disaster.js"></script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-4 flex justify-between">
+    <h2 class="text-xl font-bold">台水公司災害通報彙整</h2>
+  </div>
+
+  {% block content %}
+  <div class="p-4">
+    <div class="flex justify-between items-center">
+      <!-- 左側：label + select + 新增按鈕 -->
+      <div class="flex items-center space-x-2">
+        <label for="history-select" class="whitespace-nowrap">歷史資料：</label>
+        <select id="history-select" class="border p-2 rounded">
+          <option value="">請選擇...</option>
+        </select>
+        <button onclick="openNewModal()" class="bg-blue-500 text-white px-4 py-2 rounded">＋ 新增</button>
+      </div>
+
+      <!-- 右側：上傳 Excel -->
+      <div class="flex items-center space-x-2">
+        <button onclick="downloadSelectedExcel()" class="ml-2 px-3 py-2 bg-yellow-600 text-white rounded">下載此筆資料</button>
+        <button onclick="openUploadModal()" class="ml-4 px-3 py-2 bg-green-600 text-white rounded whitespace-nowrap">上傳 Excel</button>
+        <button onclick="downloadExampleExcel()" class="ml-2 px-3 py-2 bg-gray-700 text-white rounded">下載範例檔案</a>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <table id="excel-table" class="w-full table-auto border text-sm">
+        <thead>
+          <tr>
+            <th></th><th></th><th></th>
+            <th colspan="3">停水</th><th colspan="3">降壓</th>
+            <th></th><th></th>
+          </tr>
+          <tr class="border-b font-semibold text-left">
+            <th>序號</th><th>行政區</th><th>里</th>
+            <th>目前停水戶數</th><th>已復水戶數</th><th>累積停水戶數</th>
+            <th>目前降壓戶數</th><th>已降壓戶數</th><th>累積降壓戶數</th>
+            <th>影響戶數</th><th>預計復水時間</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- 新增 modal -->
+    <div id="new-modal" class="fixed inset-0 hidden bg-black bg-opacity-50 flex items-center justify-center">
+      <form class="bg-white p-6 rounded shadow space-y-4" onsubmit="submitNew(event)">
+        <h3 class="font-bold text-lg">新增歷史資料</h3>
+        <input name="name" placeholder="名稱" class="w-full border p-2" required>
+        <div class="flex justify-end">
+          <button type="button" onclick="closeNewModal()" class="px-4 py-2 border rounded mr-2">取消</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">儲存</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 上傳 modal -->
+    <div id="upload-modal" class="fixed inset-0 hidden bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <form id="upload-form" class="bg-white p-6 rounded shadow space-y-4" onsubmit="submitExcelUpload(event)">
+        <h3 class="text-lg font-bold">上傳 Excel 檔案</h3>
+        <input type="file" name="file" accept=".xlsx" required class="w-full border p-2">
+        <div class="flex justify-end">
+          <button type="button" onclick="closeUploadModal()" class="px-4 py-2 border rounded mr-2">取消</button>
+          <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">上傳</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 覆蓋提示 modal -->
+    <div id="confirm-overwrite-modal" class="fixed inset-0 hidden bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded shadow space-y-4">
+        <p>⚠️ 此歷史資料已有上傳檔案，是否要覆蓋？</p>
+        <div class="flex justify-end">
+          <button onclick="cancelOverwrite()" class="px-4 py-2 border rounded mr-2">取消</button>
+          <button onclick="confirmOverwrite()" class="px-4 py-2 bg-red-600 text-white rounded">覆蓋</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endblock %}
+</body>
+</html>
