@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>停水彙整表</title>
+  <script>
+    const currentUser = {{ {
+      "id": current_user.id,
+      "username": current_user.username,
+      "full_name": current_user.full_name,
+      "role_id": current_user.role_id,
+      "role_name": current_user.role_name,
+      "district_id": current_user.district_id,
+      "district": current_user.district,
+      "village": current_user.village,
+      "phone": current_user.phone
+    } | tojson }};
+    const userPermissions = {{ user_permissions | tojson }};
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../static/water_stats.js"></script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-4 flex justify-between">
+    <h2 class="text-xl font-bold">停水彙整表</h2>
+  </div>
+
+  <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
+    <!-- 排序 -->
+    <div>
+      <label class="font-medium mr-2">排序依據：</label>
+      <select id="sortField" class="border p-1 rounded">
+        <option value="">無排序</option>
+        <option value="id">序號</option>
+        <option value="district">行政區</option>
+        <option value="village">里</option>
+        <option value="created_at">通報時間</option>
+      </select>
+      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
+    </div>
+
+    <!-- 篩選 -->
+    <div>
+      <label class="font-medium mr-2">行政區：</label>
+      <select id="filterDistrict" class="border p-1 rounded">
+      </select>
+    </div>
+    <div>
+      <label class="font-medium mr-2">里：</label>
+      <select id="filterVillage" class="border p-1 rounded">
+      </select>
+    </div>
+    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+  </div>
+
+  <div class="grid grid-cols-5 gap-4">
+    <!-- 左：回報表格 -->
+    <div class="col-span-5 bg-white shadow rounded p-4">
+      <table class="w-full text-sm table-auto">
+        <thead>
+          <tr class="sticky top-[56px] z-20 bg-white border-b font-semibold text-left">
+            <th>序號</th><th>行政區</th><th>里</th><th>地點</th><th>是否需設加水站</th>
+            <th>是否已設加水站</th><th>預估修復時間</th>
+          </tr>
+        </thead>
+        <tbody id="report-table-body">
+          <!-- 動態資料插入 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
