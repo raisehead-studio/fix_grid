@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>台電支援需求彙整表</title>
+  <script>
+    const currentUser = {{ {
+      "id": current_user.id,
+      "username": current_user.username,
+      "full_name": current_user.full_name,
+      "role_id": current_user.role_id,
+      "role_name": current_user.role_name,
+      "district_id": current_user.district_id,
+      "district": current_user.district,
+      "village": current_user.village,
+      "phone": current_user.phone
+    } | tojson }};
+    const userPermissions = {{ user_permissions | tojson }};
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../static/taipower_support.js"></script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-4 flex justify-between">
+    <h2 class="text-xl font-bold">台電支援需求彙整表</h2>
+    {% if 'create_report' in user_permissions %}
+    <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
+    {% endif %}
+  </div>
+
+  <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
+    <!-- 排序 -->
+    <div>
+      <label class="font-medium mr-2">排序依據：</label>
+      <select id="sortField" class="border p-1 rounded">
+        <option value="">無排序</option>
+        <option value="id">序號</option>
+        <option value="district">行政區</option>
+        <option value="village">里</option>
+        <option value="created_at">通報時間</option>
+      </select>
+      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
+    </div>
+
+    <!-- 篩選 -->
+    <div>
+      <label class="font-medium mr-2">行政區：</label>
+      <select id="filterDistrict" class="border p-1 rounded">
+      </select>
+    </div>
+    <div>
+      <label class="font-medium mr-2">里：</label>
+      <select id="filterVillage" class="border p-1 rounded">
+      </select>
+    </div>
+    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+  </div>
+
+  <div class="grid grid-cols-5 gap-4">
+    <!-- 左：回報表格 -->
+    <div class="col-span-3 bg-white shadow rounded p-4">
+      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所回報</h3>
+      <table class="w-full text-sm table-auto">
+        <thead>
+          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
+            <th>序號</th><th>行政區</th><th>里</th><th>地點</th><th>停電原因</th><th>停電戶數</th>
+            <th>聯絡人</th><th>電話</th><th>通報時間</th>
+          </tr>
+        </thead>
+        <tbody id="report-table-body">
+          <!-- 動態資料插入 -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 右：台電狀態表格 -->
+    <div class="col-span-2 bg-white shadow rounded p-4">
+      <h3 class="sticky top-[56px] z-40 bg-white text-lg font-medium">台電填報</h3>
+      <table class="w-full text-sm table-auto">
+        <thead>
+          <tr class="sticky top-[80px] z-30 bg-white border-b font-semibold text-left">
+            <th>回報說明</th><th>預估修復時間</th><th>支援內容</th>
+          </tr>
+        </thead>
+        <tbody id="taipower-table-body">
+          <!-- 動態資料插入 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
