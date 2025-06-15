@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>停電彙整表</title>
+  <script>
+    const currentUser = {{ {
+      "id": current_user.id,
+      "username": current_user.username,
+      "full_name": current_user.full_name,
+      "role_id": current_user.role_id,
+      "role_name": current_user.role_name,
+      "district_id": current_user.district_id,
+      "district": current_user.district,
+      "village": current_user.village,
+      "phone": current_user.phone
+    } | tojson }};
+    const userPermissions = {{ user_permissions | tojson }};
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="../static/power_stats.js"></script>
+</head>
+<body class="bg-gray-100">
+  {% include 'navigation.html' %}
+  <div class="p-4 flex justify-between items-center">
+    <h2 class="text-xl font-bold">停電彙整表</h2>
+    <div class="space-x-2">
+      <button onclick="switchMode('village')" class="px-4 py-2 bg-blue-600 text-white rounded">以里分類</button>
+      <button onclick="switchMode('district')" class="px-4 py-2 bg-gray-600 text-white rounded">以區分類</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-5 gap-4 p-4">
+    <div class="col-span-2 grid grid-cols-4 gap-4">
+      <div class="col-span-3 bg-white shadow rounded p-4">
+        <h3 class="text-lg font-semibold mb-2">公所回報資料</h3>
+        <table class="w-full text-sm table-auto">
+          <thead id="left-table-head" class="text-left"></thead>
+          <tbody id="left-table-body"></tbody>
+        </table>
+      </div>
+
+      <div class="col-span-1 bg-white shadow rounded p-4">
+        <h3 class="text-lg font-semibold mb-2">台電官網</h3>
+        <table class="w-full text-sm table-auto">
+          <thead>
+            <tr class="text-left"><th>停電戶數</th></tr>
+          </thead>
+          <tbody id="right-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="col-span-3 bg-white shadow rounded p-4">
+      <h3 class="text-lg font-semibold mb-2">視覺化圖表</h3>
+      <canvas id="power-chart" height="200"></canvas>
+    </div>
+  </div>
+</body>
+</html>

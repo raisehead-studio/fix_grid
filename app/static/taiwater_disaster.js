@@ -36,6 +36,7 @@ function loadExcelData(disasterId) {
       tbody.innerHTML = "";
       json.data.forEach((row, i) => {
         const tr = document.createElement("tr");
+        tr.className = "border-t border-b";
         tr.innerHTML = `
           <td>${i + 1}</td>
           <td>${row["行政區"]}</td>
