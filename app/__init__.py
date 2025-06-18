@@ -103,6 +103,13 @@ def create_app():
         role_pages = all_permissions.get(role_name, {})
         actions = role_pages.get(page, [])
 
+        if current_user.role_id == 4:  # 里幹事
+            page_name_map["power_outage"] = "停電通報"
+            page_name_map["water_outage"] = "停水通報"
+        elif current_user.role_id in [5, 6]:  # 台電/台水人員
+            page_name_map["power_outage"] = "停電彙整"
+            page_name_map["water_outage"] = "停水彙整"
+
         # 將通用變數整理
         context = {
             "role": role_name,

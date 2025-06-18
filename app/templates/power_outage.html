@@ -2,7 +2,13 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>停電彙整</title>
+  <title>
+    {% if current_user.role_id == 4 %}
+      停電通報
+    {% else %}
+      停電彙整
+    {% endif %}
+  </title>
   <script>
     const currentUser = {{ {
       "id": current_user.id,
@@ -22,7 +28,13 @@
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="p-4 flex justify-between items-center">
-    <h2 class="text-xl font-bold">停電彙整</h2>
+    <h2 class="text-xl font-bold">
+      {% if current_user.role_id == 4 %}
+        停電通報
+      {% else %}
+        停電彙整
+      {% endif %}
+    </h2>
 
     <div class="flex gap-2">
       <button onclick="window.print()" class="bg-gray-500 text-white px-4 py-2 rounded">列印</button>
