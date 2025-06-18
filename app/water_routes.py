@@ -15,14 +15,24 @@ def get_db():
 def get_water_reports():
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT po.*, d.name, v.name
-        FROM water_reports po
-        LEFT JOIN districts d ON po.district_id = d.id
-        LEFT JOIN villages v ON po.village_id = v.id
-        WHERE po.deleted_at IS NULL
-        ORDER BY po.created_at
-    """)
+    if current_user.role_id == 4:  # 里幹事
+        cursor.execute("""
+            SELECT po.*, d.name, v.name
+            FROM water_reports po
+            LEFT JOIN districts d ON po.district_id = d.id
+            LEFT JOIN villages v ON po.village_id = v.id
+            WHERE po.deleted_at IS NULL AND po.created_by = ?
+            ORDER BY po.created_at
+        """, (current_user.id,))
+    else:
+        cursor.execute("""
+            SELECT po.*, d.name, v.name
+            FROM water_reports po
+            LEFT JOIN districts d ON po.district_id = d.id
+            LEFT JOIN villages v ON po.village_id = v.id
+            WHERE po.deleted_at IS NULL
+            ORDER BY po.created_at
+        """)
     rows = cursor.fetchall()
     data = [dict(
         id=row[0],

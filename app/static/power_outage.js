@@ -68,15 +68,17 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchReports();
 });
 
+const canViewStatus = userPermissions.includes("view_status");
 document.getElementById('filterDistrict').addEventListener('change', () => fetchReports());
 document.getElementById('filterVillage').addEventListener('change', () => fetchReports());
-document.getElementById('filterMismatch').addEventListener('change', () => fetchReports());
+if (canViewStatus) {
+  document.getElementById('filterMismatch').addEventListener('change', () => fetchReports());
+}
 
 let power_data = {};
 
 async function fetchReports() {
   const res = await fetch('/api/power_reports');
-  const canViewStatus = userPermissions.includes("view_status");
   let data = await res.json();
 
   let hideReportEdit = data.every(e => e.report_status);
