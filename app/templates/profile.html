@@ -38,9 +38,6 @@
       {% if current_user.district %}
         <p><strong>行政區：</strong>{{ current_user.district }}</p>
       {% endif %}
-      {% if current_user.village %}
-        <p><strong>里別：</strong>{{ current_user.village }}</p>
-      {% endif %}
     </div>
   </div>
 
@@ -60,13 +57,6 @@
       <div>
         <label for="district" class="block text-sm font-medium mb-1">行政區</label>
         <select id="district" name="district" class="w-full border p-2" required></select>
-      </div>
-
-      <div>
-        <label for="village" class="block text-sm font-medium mb-1">里別</label>
-        <select id="village" name="village" class="w-full border p-2" required>
-          <option value="">請先選擇行政區</option>
-        </select>
       </div>
 
       <hr class="my-2">
@@ -125,27 +115,27 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-  districtSelect.addEventListener("change", () => {
-    loadVillages(districtSelect.value);
-  });
+  // districtSelect.addEventListener("change", () => {
+  //   loadVillages(districtSelect.value);
+  // });
 
-  function loadVillages(districtId, selectedVillageId = null) {
-    villageSelect.innerHTML = '<option value="">載入中...</option>';
-    fetch(`/api/villages/${districtId}`)
-      .then(res => res.json())
-      .then(data => {
-        villageSelect.innerHTML = '<option value="">請選擇里別</option>';
-        data.forEach(v => {
-          const option = document.createElement("option");
-          option.value = v.id;
-          option.textContent = v.name;
-          if (selectedVillageId && parseInt(selectedVillageId) === v.id) {
-            option.selected = true;
-          }
-          villageSelect.appendChild(option);
-        });
-      });
-  }
+  // function loadVillages(districtId, selectedVillageId = null) {
+  //   villageSelect.innerHTML = '<option value="">載入中...</option>';
+  //   fetch(`/api/villages/${districtId}`)
+  //     .then(res => res.json())
+  //     .then(data => {
+  //       villageSelect.innerHTML = '<option value="">請選擇里別</option>';
+  //       data.forEach(v => {
+  //         const option = document.createElement("option");
+  //         option.value = v.id;
+  //         option.textContent = v.name;
+  //         if (selectedVillageId && parseInt(selectedVillageId) === v.id) {
+  //           option.selected = true;
+  //         }
+  //         villageSelect.appendChild(option);
+  //       });
+  //     });
+  // }
 });
 
 function openEditModal() {

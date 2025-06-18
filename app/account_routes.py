@@ -82,7 +82,7 @@ def create_account():
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (username, password, full_name, phone, role_id, district_id, village_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO users (username, password, full_name, phone, role_id, district_id) VALUES (?, ?, ?, ?, ?, ?)",
         (
             data['username'],
             generate_password_hash(data['password']),
@@ -90,7 +90,6 @@ def create_account():
             data['phone'],
             data['role_id'],
             data['district_id'],
-            data['village_id']
         )
     )
     conn.commit()

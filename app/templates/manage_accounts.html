@@ -17,7 +17,6 @@
           <td class="p-2">${user.full_name}</td>
           <td class="p-2">${user.role_name}</td>
           <td class="p-2">${user.district_name}</td>
-          <td class="p-2">${user.village_name}</td>
           <td class="p-2">
             ${user.role_name === "超級管理員" ? "" : `<span class="text-red-500 hover:underline cursor-pointer" onclick="deleteUser(${user.id})">刪除</span>`}
           </td>
@@ -52,20 +51,40 @@
     }
 
     async function createUser() {
+      const username = document.getElementById('new-username').value.trim();
+      const password = document.getElementById('new-password').value.trim();
+      const fullName = document.getElementById('new-full-name').value.trim();
+      const phone = document.getElementById('new-phone').value.trim();
+      const roleId = document.getElementById('new-role').value;
+      const districtId = document.getElementById('new-district').value;
+
+      // 驗證：必填欄位
+      if (!username || !password || !fullName || !phone || !roleId) {
+        alert("請完整填寫帳號、密碼、姓名、電話與角色");
+        return;
+      }
+
+      // 驗證：電話需為 10 碼數字（例如 0912345678）
+      if (!/^\d{10}$/.test(phone)) {
+        alert("電話格式不正確，需為 10 碼數字，例如：0912345678");
+        return;
+      }
+
       const payload = {
-        username: document.getElementById('new-username').value,
-        password: document.getElementById('new-password').value,
-        full_name: document.getElementById('new-full-name').value,
-        phone: document.getElementById('new-phone').value,
-        role_id: parseInt(document.getElementById('new-role').value),
-        district_id: parseInt(document.getElementById('new-district').value),
-        village_id: parseInt(document.getElementById('new-village').value)
+        username,
+        password,
+        full_name: fullName,
+        phone,
+        role_id: parseInt(roleId),
+        district_id: parseInt(districtId || null)
       };
+
       await fetch('/api/create_account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       document.getElementById('createModal').classList.add('hidden');
       loadUsers();
     }
@@ -73,12 +92,21 @@
     window.onload = () => {
       loadUsers();
       loadFormOptions();
-      document.getElementById('new-district').addEventListener('change', e => loadVillages(e.target.value));
+      // document.getElementById('new-district').addEventListener('change', e => loadVillages(e.target.value));
     };
 
     function closeModalOnOutsideClick(event) {
       const modal = document.getElementById('createModal');
       modal.classList.add('hidden');
+    }
+
+    function resetCreateUserForm() {
+      document.getElementById('new-username').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('new-full-name').value = '';
+      document.getElementById('new-phone').value = '';
+      document.getElementById('new-role').value = '';
+      document.getElementById('new-district').value = '';
     }
   </script>
 </head>
@@ -86,7 +114,7 @@
   {% include 'navigation.html' %}
   <div class="p-6">
     <h1 class="text-2xl font-bold mb-4">帳號管理</h1>
-    <button onclick="document.getElementById('createModal').classList.remove('hidden')"
+    <button onclick="resetCreateUserForm(); document.getElementById('createModal').classList.remove('hidden')"
             class="mb-4 bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">新增帳號</button>
     <table class="table-auto w-full bg-white shadow rounded">
       <thead>
@@ -95,7 +123,6 @@
           <th class="p-2">姓名</th>
           <th class="p-2">角色</th>
           <th class="p-2">區</th>
-          <th class="p-2">里</th>
           <th class="p-2">操作</th>
         </tr>
       </thead>
@@ -108,13 +135,50 @@
     onclick="closeModalOnOutsideClick(event)">
     <div class="bg-white p-6 rounded shadow-lg w-[400px] space-y-4" onclick="event.stopPropagation()">
       <h2 class="text-xl font-bold">新增帳號</h2>
-      <input id="new-username" class="w-full p-2 border rounded" placeholder="帳號">
-      <input id="new-password" class="w-full p-2 border rounded" placeholder="密碼" type="password">
-      <input id="new-full-name" class="w-full p-2 border rounded" placeholder="姓名">
-      <input id="new-phone" class="w-full p-2 border rounded" placeholder="電話">
-      <select id="new-role" class="w-full p-2 border rounded"><option value="">角色</option></select>
-      <select id="new-district" class="w-full p-2 border rounded"><option value="">區</option></select>
-      <select id="new-village" class="w-full p-2 border rounded"><option value="">里</option></select>
+      <div>
+        <label for="new-username" class="block text-sm font-medium text-gray-700">
+          帳號 <span class="text-red-500">*</span>
+        </label>
+        <input id="new-username" class="w-full p-2 border rounded" placeholder="帳號">
+      </div>
+
+      <div>
+        <label for="new-password" class="block text-sm font-medium text-gray-700">
+          密碼 <span class="text-red-500">*</span>
+        </label>
+        <input id="new-password" class="w-full p-2 border rounded" placeholder="密碼" type="password">
+      </div>
+
+      <div>
+        <label for="new-full-name" class="block text-sm font-medium text-gray-700">
+          姓名 <span class="text-red-500">*</span>
+        </label>
+        <input id="new-full-name" class="w-full p-2 border rounded" placeholder="姓名">
+      </div>
+
+      <div>
+        <label for="new-phone" class="block text-sm font-medium text-gray-700">
+          電話 <span class="text-red-500">*</span>
+        </label>
+        <input id="new-phone" class="w-full p-2 border rounded" placeholder="電話">
+      </div>
+
+      <div>
+        <label for="new-role" class="block text-sm font-medium text-gray-700">
+          角色 <span class="text-red-500">*</span>
+        </label>
+        <select id="new-role" class="w-full p-2 border rounded">
+          <option value="">角色</option>
+        </select>
+      </div>
+      <div>
+        <label for="new-district" class="block text-sm font-medium text-gray-700">
+          區
+        </label>
+        <select id="new-district" class="w-full p-2 border rounded">
+          <option value="">區</option>
+        </select>
+      </div>
       <div class="flex justify-end space-x-2">
         <button onclick="document.getElementById('createModal').classList.add('hidden')"
                 class="px-4 py-1 bg-gray-300 rounded">取消</button>
