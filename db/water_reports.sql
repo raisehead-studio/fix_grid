@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS water_reports (
     taiwater_water_station_status TEXT,
     taiwater_support TEXT,
 
+    remarks TEXT,
+
     FOREIGN KEY (district_id) REFERENCES districts(id),
     FOREIGN KEY (village_id) REFERENCES villages(id),
     FOREIGN KEY (created_by) REFERENCES users(id)

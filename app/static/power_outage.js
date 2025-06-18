@@ -78,7 +78,6 @@ async function fetchReports() {
   const res = await fetch('/api/power_reports');
   const canViewStatus = userPermissions.includes("view_status");
   let data = await res.json();
-  console.log(data.length)
 
   let hideReportEdit = data.every(e => e.report_status);
   let hideTaipowerEdit = data.every(e => e.taipower_status);

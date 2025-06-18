@@ -42,7 +42,8 @@ def get_water_reports():
         taiwater_water_station_status=row[17],
         taiwater_support=row[18],
         taiwater_restored_at=row[14],
-        created_at=row[8]
+        created_at=row[8],
+        remarks=row[19]
     ) for row in rows]
     conn.close()
     return jsonify(data)
@@ -54,8 +55,8 @@ def create_water_report():
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO water_reports (district_id, village_id, location, water_station, contact_name, contact_phone, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO water_reports (district_id, village_id, location, water_station, contact_name, contact_phone, created_by, remarks)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         current_user.district_id,
         data["village_id"],
@@ -63,7 +64,8 @@ def create_water_report():
         data["water_station"],
         data["contact_name"],
         data["contact_phone"],
-        current_user.id
+        current_user.id,
+        data["remarks"]
     ))
     conn.commit()
     conn.close()
@@ -77,14 +79,14 @@ def update_water_outage_report(id):
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE water_reports
-        SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
+        SET location = ?, water_station = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now'), remarks = ?
         WHERE id = ? AND report_status = 0
     """, (
         data['location'],
-        data['reason'],
-        data['count'],
+        data['water_station'],
         data['contact_name'],
         data['contact_phone'],
+        data['remarks'],
         id
     ))
     conn.commit()
@@ -113,10 +115,10 @@ def update_taiwater_status(id):
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE water_reports
-        SET taiwater_note = ?, taiwater_eta_hours = ?, taiwater_support = ?
+        SET taiwater_note = ?, taiwater_water_station_status = ?, taiwater_eta_hours = ?, taiwater_support = ?, taiwater_restored_at = current_timestamp
         WHERE id = ?
     """, (
-        data['taiwater_note'], data['taiwater_eta_hours'], data['taiwater_support'], id
+        data['taiwater_note'], data['taiwater_water_station_status'], data['taiwater_eta_hours'], data['taiwater_support'], id
     ))
     conn.commit()
     conn.close()

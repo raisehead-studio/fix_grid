@@ -1,3 +1,22 @@
+let sortField = '';
+let sortOrder = 'asc';
+
+function syncRowHeights(leftSelector, rightSelector) {
+  const leftRows = document.querySelectorAll(leftSelector);
+  const rightRows = document.querySelectorAll(rightSelector);
+
+  const rowCount = Math.min(leftRows.length, rightRows.length);
+
+  for (let i = 0; i < rowCount; i++) {
+    const leftHeight = leftRows[i].getBoundingClientRect().height;
+    const rightHeight = rightRows[i].getBoundingClientRect().height;
+    const maxHeight = Math.max(leftHeight, rightHeight);
+
+    leftRows[i].style.height = `${maxHeight}px`;
+    rightRows[i].style.height = `${maxHeight}px`;
+  }
+}
+
 function openReportModal() {
   document.getElementById('reportModal').classList.remove('hidden');
 
@@ -49,6 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchReports();
 });
 
+document.getElementById('filterDistrict').addEventListener('change', () => fetchReports());
+document.getElementById('filterVillage').addEventListener('change', () => fetchReports());
+document.getElementById('filterMismatch').addEventListener('change', () => fetchReports());
+
 let water_data = {};
 
 async function fetchReports() {
@@ -56,8 +79,16 @@ async function fetchReports() {
   const canViewStatus = userPermissions.includes("view_status");
   let data = await res.json();
 
+  let hideReportEdit = data.every(e => e.report_status);
+  let hideTaipowerEdit = data.every(e => e.taiwater_status);
+
+  // 控制 <th> 顯示與否
+  document.getElementById('th-edit-report').style.display = hideReportEdit ? 'none' : '';
+  if (userPermissions.includes("view_status")) {
+    document.getElementById('th-edit-taiwater').style.display = hideTaipowerEdit ? 'none' : '';
+  }
+
   // 取得排序與篩選設定
-  const selectedSortField = document.getElementById('sortField').value;
   const selectedDistrict = document.getElementById('filterDistrict').value;
   const selectedVillage = document.getElementById('filterVillage').value;
   
@@ -77,10 +108,10 @@ async function fetchReports() {
   }
 
   // 排序處理
-  if (selectedSortField) {
+  if (sortField) {
     data.sort((a, b) => {
-      let aVal = a[selectedSortField];
-      let bVal = b[selectedSortField];
+      let aVal = a[sortField];
+      let bVal = b[sortField];
 
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
@@ -93,6 +124,10 @@ async function fetchReports() {
 
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
+  if (canViewStatus) {
+    const taiwaterBody = document.getElementById('taiwater-table-body');
+    taiwaterBody.innerHTML = '';
+  }
 
   data.forEach((entry, index) => {
     water_data[entry.id] = entry
@@ -108,13 +143,16 @@ async function fetchReports() {
       <td>${entry.water_station === '是' ? '是' : '否'}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td>${entry.created_at}</td>
+      <td class="whitespace-nowrap">${entry.created_at}</td>
+      <td>
+        <div class="whitespace-pre-line overflow-x-auto overflow-y-auto max-h-[6em] max-w-[10em]">${entry.remarks || '-'}</div>
+      </td>
       <td>
         ${entry.report_status 
-          ? '<span class="text-green-600">已復水</span>' 
+          ? '<span class="text-green-600 whitespace-nowrap">已復水</span>' 
           : (canEditReport 
-              ? `<button onclick="confirmReportRestore(${entry.id})" class="text-red-600 underline">未復水</button>` 
-              : '<span class="text-red-600">未復水</span>')}
+              ? `<button onclick="confirmReportRestore(${entry.id})" class="text-red-600 underline whitespace-nowrap">未復水</button>` 
+              : '<span class="text-red-600 whitespace-nowrap">未復水</span>')}
       </td>
       <td class="text-center">
         ${!entry.report_status && canEditReport 
@@ -128,20 +166,19 @@ async function fetchReports() {
     if (canViewStatus) {
       const canEditStatus = userPermissions.includes("edit_status");
       const taiwaterBody = document.getElementById('taiwater-table-body');
-      if (index == 0) {
-        taiwaterBody.innerHTML = '';
-      }
       const statusRow = document.createElement('tr');
       statusRow.className = "border-b";
       statusRow.innerHTML = `
         <td>
           ${entry.taiwater_status 
-            ? '<span class="text-green-600">已復水</span>' 
+            ? '<span class="text-green-600 whitespace-nowrap">已復水</span>' 
             : (canEditStatus 
-                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline">未復水</button>` 
-                : '<span class="text-red-600">未復水</span>')}
+                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline whitespace-nowrap">未復水</button>` 
+                : '<span class="text-red-600 whitespace-nowrap">未復水</span>')}
         </td>
-        <td>${entry.taiwater_description || '-'}</td>
+        <td>
+          <div class="whitespace-pre-line overflow-x-auto overflow-y-auto max-h-[6em] max-w-[10em]">${entry.taiwater_description || '-'}</div>
+        </td>
         <td>${
           entry.taiwater_eta_hours
             ? `<span class="${entry.taiwater_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
@@ -151,6 +188,7 @@ async function fetchReports() {
         }</td>
         <td>${entry.taiwater_water_station_status === '是' ? '已新增' : '未新增'}</td>
         <td>${entry.taiwater_support || '-'}</td>
+        <td class="whitespace-nowrap">${entry.taiwater_restored_at ? entry.taiwater_restored_at : '-'}</td>
         <td class="text-center">
           ${!entry.taiwater_status && canEditStatus 
             ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
@@ -160,6 +198,12 @@ async function fetchReports() {
       taiwaterBody.appendChild(statusRow);
     }
   });
+
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      syncRowHeights("#report-table-body tr", "#taiwater-table-body tr");
+    });
+  }, 0);
 }
 
 // Modals
@@ -174,6 +218,7 @@ function openEditReport(entry_id) {
   document.getElementById('edit-water-station').value = entry.water_station || '否';
   document.getElementById('edit-contact').value = entry.contact || '';
   document.getElementById('edit-phone').value = entry.phone || '';
+  document.getElementById('edit-remarks').value = entry.remarks || '';
   document.getElementById('editReportModal').classList.remove('hidden');
 }
 
@@ -182,7 +227,8 @@ function submitEditReport() {
     location: document.getElementById('edit-location').value,
     water_station: document.getElementById('edit-water-station').value,
     contact_name: document.getElementById('edit-contact').value,
-    contact_phone: document.getElementById('edit-phone').value
+    contact_phone: document.getElementById('edit-phone').value,
+    remarks: document.getElementById('edit-remarks').value,
   };
   fetch(`/api/water_reports/${currentEditingReportId}/update_report`, {
     method: 'POST',
@@ -207,6 +253,7 @@ function openEditStatus(entry_id) {
 function submitEditStatus() {
   const payload = {
     taiwater_note: document.getElementById('edit-description').value,
+    taiwater_water_station_status: document.getElementById('edit-water-station-status').value,
     taiwater_eta_hours: parseInt(document.getElementById('edit-estimate-hour').value),
     taiwater_support: document.getElementById('edit-support').value
   };
@@ -301,20 +348,41 @@ async function loadFilterVillages(districtId) {
   villages.forEach(v => villageSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`);
 }
 
-let sortField = '';
-let sortOrder = 'asc';
-
 function toggleSortOrder() {
   sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
   document.getElementById('sortOrderBtn').innerText = sortOrder === 'asc' ? '升序 ⬆️' : '降序 ⬇️';
 }
 
 function clearFilters() {
-  document.getElementById('sortField').value = '';
+  sortField = '';
+  sortOrder = 'asc';
   document.getElementById('filterDistrict').value = '';
   document.getElementById('filterVillage').innerHTML = '<option value="">全部</option>';
   document.getElementById('filterMismatch').checked = false;
-  document.getElementById('sortOrderBtn').innerText = '升序 ⬆️';
   sortAscending = true;
   fetchReports();
+}
+
+function setSort(field) {
+  if (sortField === field) {
+    sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortOrder = 'asc';
+  }
+  updateSortIndicators();
+  fetchReports();
+}
+
+function updateSortIndicators() {
+  const fields = [
+    'id', 'district', 'village', 'location', 'water_station', 'remarks', 'contact', 'phone', 'created_at', 'report_status',
+    'taiwater_status', 'taiwater_description', 'taiwater_eta_hours', 'taiwater_support', 'taiwater_restored_at', 'taiwater_water_station_status'
+  ];
+  fields.forEach(f => {
+    const el = document.getElementById(`sort-indicator-${f}`);
+    if (el) {
+      el.innerText = (f === sortField) ? (sortOrder === 'asc' ? '⬆️' : '⬇️') : '';
+    }
+  });
 }
