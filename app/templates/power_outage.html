@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>停電彙整表</title>
+  <title>停電彙整</title>
   <script>
     const currentUser = {{ {
       "id": current_user.id,
@@ -18,31 +18,21 @@
     const userPermissions = {{ user_permissions | tojson }};
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../static/power_outage.js"></script>
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
-  <div class="p-4 flex justify-between">
-    <h2 class="text-xl font-bold">停電彙整表</h2>
-    {% if 'create_report' in user_permissions %}
-    <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
-    {% endif %}
+  <div class="p-4 flex justify-between items-center">
+    <h2 class="text-xl font-bold">停電彙整</h2>
+
+    <div class="flex gap-2">
+      <button onclick="window.print()" class="bg-gray-500 text-white px-4 py-2 rounded">列印</button>
+      {% if 'create_report' in user_permissions %}
+      <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
+      {% endif %}
+    </div>
   </div>
 
   <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
-    <!-- 排序 -->
-    <div>
-      <label class="font-medium mr-2">排序依據：</label>
-      <select id="sortField" class="border p-1 rounded">
-        <option value="">無排序</option>
-        <option value="id">序號</option>
-        <option value="district">行政區</option>
-        <option value="village">里</option>
-        <option value="created_at">通報時間</option>
-      </select>
-      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
-    </div>
-
     <!-- 篩選 -->
     <div>
       <label class="font-medium mr-2">行政區：</label>
@@ -62,23 +52,51 @@
       </label>
     </div>
     {% endif %}
-    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
-    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除排序篩選</button>
   </div>
 
-  <div class="grid grid-cols-5 gap-4">
+  <div class="grid grid-cols-7 gap-4">
     <!-- 左：回報表格 -->
     {% if 'view_status' in user_permissions %}
-    <div class="col-span-3 bg-white shadow rounded p-4">
+    <div class="col-span-4 bg-white shadow rounded p-4">
     {% else %}
-    <div class="col-span-5 bg-white shadow rounded p-4">
+    <div class="col-span-7 bg-white shadow rounded p-4">
     {% endif %}
-      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所回報</h3>
+      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所通報</h3>
       <table class="w-full text-sm table-auto">
-        <thead>
+        <thead class="whitespace-nowrap">
           <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
-            <th>序號</th><th>行政區</th><th>里</th><th>地點</th><th>停電原因</th><th>停電戶數</th>
-            <th>聯絡人</th><th>電話</th><th>通報時間</th><th>狀態</th><th class="text-center">編輯</th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('id')">
+              序號 <span id="sort-indicator-id"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('district')">
+              行政區 <span id="sort-indicator-district"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('village')">
+              里 <span id="sort-indicator-village"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('location')">
+              地點 <span id="sort-indicator-location"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('reason')">
+              停電原因 <span id="sort-indicator-reason"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('count')">
+              停電戶數 <span id="sort-indicator-count"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('contact')">
+              聯絡人 <span id="sort-indicator-contact"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('phone')">
+              電話 <span id="sort-indicator-phone"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('created_at')">
+              通報時間 <span id="sort-indicator-created_at"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('report_status')">
+              狀態 <span id="sort-indicator-report_status"></span>
+            </th>
+            <th id="th-edit-report" class="text-center">編輯</th>
           </tr>
         </thead>
         <tbody id="report-table-body">
@@ -89,12 +107,27 @@
 
     <!-- 右：台電狀態表格 -->
     {% if 'view_status' in user_permissions %}
-    <div class="col-span-2 bg-white shadow rounded p-4">
-      <h3 class="sticky top-[56px] z-40 bg-white text-lg font-medium">台電填報</h3>
+    <div class="col-span-3 bg-white shadow rounded p-4">
+      <h3 class="sticky top-[56px] z-40 bg-white text-lg font-medium">台電回報</h3>
       <table class="w-full text-sm table-auto">
-        <thead>
+        <thead class="whitespace-nowrap">
           <tr class="sticky top-[80px] z-30 bg-white border-b font-semibold text-left">
-            <th>狀態</th><th>回報說明</th><th>預估修復時間</th><th>支援內容</th><th class="text-center">編輯</th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('taipower_status')">
+            狀態 <span id="sort-indicator-taipower_status"></span>
+          </th>
+          <th class="cursor-pointer hover:underline" onclick="setSort('taipower_description')">
+            回報說明 <span id="sort-indicator-taipower_description"></span>
+          </th>
+          <th class="cursor-pointer hover:underline" onclick="setSort('taipower_eta_hours')">
+            預估修復時間 <span id="sort-indicator-taipower_eta_hours"></span>
+          </th>
+          <th class="cursor-pointer hover:underline" onclick="setSort('taipower_support')">
+            支援內容 <span id="sort-indicator-taipower_support"></span>
+          </th>
+          <th class="cursor-pointer hover:underline" onclick="setSort('taipower_restored_at')">
+            更新時間 <span id="sort-indicator-taipower_restored_at"></span>
+          </th>
+          <th id="th-edit-taipower" class="text-center">編輯</th>
           </tr>
         </thead>
         <tbody id="taipower-table-body">
@@ -150,7 +183,7 @@
   </div>
 
   <!-- 🔧 編輯回報 Modal -->
-  <div id="editReportModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+  <div id="editReportModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onclick="checkModalClick(event, 'editReportModal')">
     <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
       <h2 class="text-xl font-bold mb-4">編輯回報資料</h2>
@@ -184,7 +217,7 @@
   </div>
 
   <!-- ⚡ 回報復電 Modal -->
-  <div id="confirmReportRestoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+  <div id="confirmReportRestoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onclick="checkModalClick(event, 'confirmReportRestoreModal')">
     <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
       <h2 class="text-lg font-bold text-red-600 mb-4">切換供電狀態</h2>
@@ -197,7 +230,7 @@
   </div>
 
   <!-- 🧰 編輯台電狀態 Modal -->
-  <div id="editStatusModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+  <div id="editStatusModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onclick="checkModalClick(event, 'editStatusModal')">
     <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
       <h2 class="text-xl font-bold mb-4">編輯台電狀態</h2>
@@ -223,7 +256,7 @@
   </div>
 
   <!-- ⚡ 台電復電 Modal -->
-  <div id="confirmStatusRestoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center"
+  <div id="confirmStatusRestoreModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onclick="checkModalClick(event, 'confirmStatusRestoreModal')">
     <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
       <h2 class="text-lg font-bold text-red-600 mb-4">切換供電狀態</h2>
@@ -234,5 +267,7 @@
       </div>
     </div>
   </div>
+
+  <script src="../static/power_outage.js"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>停水彙整表</title>
+  <title>停水彙整</title>
   <script>
     const currentUser = {{ {
       "id": current_user.id,
@@ -23,7 +23,7 @@
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="p-4 flex justify-between">
-    <h2 class="text-xl font-bold">停水彙整表</h2>
+    <h2 class="text-xl font-bold">停水彙整</h2>
     {% if 'create_report' in user_permissions %}
     <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
     {% endif %}

@@ -67,7 +67,7 @@ def create_app():
                 ))
                 return redirect(url_for('page_info', page='profile'))
             else:
-                flash("Invalid credentials", "danger")
+                flash("帳號或密碼錯誤", "danger")
         return render_template('login.html')
 
     @app.route('/dashboard')

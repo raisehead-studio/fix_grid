@@ -32,9 +32,15 @@
     </h2>
 
     <div class="mt-4 space-y-2">
-      <p><strong>電話：</strong>{{ current_user.phone }}</p>
-      <p><strong>行政區：</strong>{{ current_user.district if current_user.district else '' }}</p>
-      <p><strong>里別：</strong>{{ current_user.village if current_user.village else '' }}</p>
+      {% if current_user.phone %}
+        <p><strong>電話：</strong>{{ current_user.phone }}</p>
+      {% endif %}
+      {% if current_user.district %}
+        <p><strong>行政區：</strong>{{ current_user.district }}</p>
+      {% endif %}
+      {% if current_user.village %}
+        <p><strong>里別：</strong>{{ current_user.village }}</p>
+      {% endif %}
     </div>
   </div>
 

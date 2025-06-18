@@ -1,16 +1,19 @@
-<ul class="sticky top-0 z-50 flex gap-4 border-b p-4 bg-white shadow">
-  {% for p, acts in pages.items() %}
-    <li>
-      <a href="{{ url_for('page_info', page=p) }}"
-         class="text-blue-600 hover:underline {{ 'font-bold' if p == current_page else '' }}">
-         {{ page_name_map.get(p, p) }}
-      </a>
-    </li>
-  {% endfor %}
+<ul class="sticky top-0 z-50 flex items-center border-b p-4 bg-white shadow">
+  <!-- 左側可橫向滾動的頁籤 -->
+  <div class="flex gap-4 overflow-x-auto whitespace-nowrap flex-1 pr-4">
+    {% for p, acts in pages.items() %}
+      <li class="flex-shrink-0 list-none">
+        <a href="{{ url_for('page_info', page=p) }}"
+           class="text-blue-600 hover:underline {{ 'font-bold' if p == current_page else '' }}">
+           {{ page_name_map.get(p, p) }}
+        </a>
+      </li>
+    {% endfor %}
+  </div>
 
-  <li class="ml-auto text-gray-700">你好，{{ current_user.full_name }}</li>
-
-  <li>
+  <!-- 右側固定區塊 -->
+  <li class="list-none text-gray-700 ml-4">你好，{{ current_user.full_name }}</li>
+  <li class="list-none ml-4">
     <a href="#" onclick="confirmLogout()" class="text-red-600 hover:underline flex items-center gap-1">
       <span>登出</span>
     </a>

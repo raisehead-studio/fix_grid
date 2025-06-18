@@ -12,9 +12,23 @@
             <div class="text-red-500 text-sm">{{ message }}</div>
           {% endfor %}
         {% endwith %}
-        <input name="username" class="w-full border p-2 mb-4" placeholder="Username">
-        <input name="password" type="password" class="w-full border p-2 mb-4" placeholder="Password">
-        <button class="w-full bg-blue-500 text-white p-2">Login</button>
+        <input name="username" id="username" class="w-full border p-2 mb-4" placeholder="Username">
+        <input name="password" id="password" type="password" class="w-full border p-2 mb-4" placeholder="Password">
+        <button id="login-btn" class="w-full bg-blue-500 text-white p-2 disabled:opacity-50" disabled>Login</button>
     </form>
+
+    <script>
+      const usernameInput = document.getElementById('username');
+      const passwordInput = document.getElementById('password');
+      const loginButton = document.getElementById('login-btn');
+
+      function toggleButtonState() {
+        const isFilled = usernameInput.value.trim() !== '' && passwordInput.value.trim() !== '';
+        loginButton.disabled = !isFilled;
+      }
+
+      usernameInput.addEventListener('input', toggleButtonState);
+      passwordInput.addEventListener('input', toggleButtonState);
+    </script>
 </body>
 </html>
