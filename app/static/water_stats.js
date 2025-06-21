@@ -1,6 +1,28 @@
+let sortField = '';
+let sortOrder = 'asc';
+
+function syncRowHeights(leftSelector, rightSelector) {
+  const leftRows = document.querySelectorAll(leftSelector);
+  const rightRows = document.querySelectorAll(rightSelector);
+
+  const rowCount = Math.min(leftRows.length, rightRows.length);
+
+  for (let i = 0; i < rowCount; i++) {
+    const leftHeight = leftRows[i].getBoundingClientRect().height;
+    const rightHeight = rightRows[i].getBoundingClientRect().height;
+    const maxHeight = Math.max(leftHeight, rightHeight);
+
+    leftRows[i].style.height = `${maxHeight}px`;
+    rightRows[i].style.height = `${maxHeight}px`;
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   fetchReports();
 });
+
+document.getElementById('filterDistrict').addEventListener('change', () => fetchReports());
+document.getElementById('filterVillage').addEventListener('change', () => fetchReports());
 
 let water_data = {};
 
@@ -10,7 +32,6 @@ async function fetchReports() {
   let data = await res.json();
 
   // 取得排序與篩選設定
-  const selectedSortField = document.getElementById('sortField').value;
   const selectedDistrict = document.getElementById('filterDistrict').value;
   const selectedVillage = document.getElementById('filterVillage').value;
   
@@ -30,10 +51,10 @@ async function fetchReports() {
   }
 
   // 排序處理
-  if (selectedSortField) {
+  if (sortField) {
     data.sort((a, b) => {
-      let aVal = a[selectedSortField];
-      let bVal = b[selectedSortField];
+      let aVal = a[sortField];
+      let bVal = b[sortField];
 
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
@@ -51,7 +72,6 @@ async function fetchReports() {
     water_data[entry.id] = entry
     // 左表格：回報
     const reportRow = document.createElement('tr');
-    const canEditReport = userPermissions.includes("edit_report");
     reportRow.className = "border-b";
     reportRow.innerHTML = `
       <td>${entry.id}</td>
@@ -69,5 +89,63 @@ async function fetchReports() {
       }</td>
     `;
     reportBody.appendChild(reportRow);
+  });
+
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
+    });
+  }, 0);
+}
+
+window.onload = async () => {
+  loadFilterDistricts()
+}
+
+async function loadFilterDistricts() {
+  const districts = await fetch('/api/districts').then(res => res.json());
+  const districtSelect = document.getElementById('filterDistrict');
+  districtSelect.innerHTML = `<option value="">全部</option>`
+  districts.forEach(d => districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+  document.getElementById('filterDistrict').addEventListener('change', e => loadFilterVillages(e.target.value));
+}
+
+async function loadFilterVillages(districtId) {
+  const res = await fetch(`/api/villages/${districtId}`);
+  const villages = await res.json();
+  const villageSelect = document.getElementById('filterVillage');
+  villageSelect.innerHTML = '<option value="">全部</option>';
+  villages.forEach(v => villageSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`);
+}
+
+function clearFilters() {
+  sortField = '';
+  sortOrder = 'asc';
+  document.getElementById('filterDistrict').value = '';
+  document.getElementById('filterVillage').innerHTML = '<option value="">全部</option>';
+  fetchReports();
+}
+
+function setSort(field) {
+  if (sortField === field) {
+    sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortOrder = 'asc';
+  }
+  updateSortIndicators();
+  fetchReports();
+}
+
+function updateSortIndicators() {
+  const fields = [
+    'id', 'district', 'village', 'location', 'reason', 'count', 'contact', 'phone', 'created_at', 'report_status',
+    'water_station', 'taiwater_water_station_status', 'taiwater_eta_hours'
+  ];
+  fields.forEach(f => {
+    const el = document.getElementById(`sort-indicator-${f}`);
+    if (el) {
+      el.innerText = (f === sortField) ? (sortOrder === 'asc' ? '⬆️' : '⬇️') : '';
+    }
   });
 }

@@ -18,7 +18,6 @@
     const userPermissions = {{ user_permissions | tojson }};
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../static/water_stats.js"></script>
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
@@ -27,19 +26,6 @@
   </div>
 
   <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
-    <!-- 排序 -->
-    <div>
-      <label class="font-medium mr-2">排序依據：</label>
-      <select id="sortField" class="border p-1 rounded">
-        <option value="">無排序</option>
-        <option value="id">序號</option>
-        <option value="district">行政區</option>
-        <option value="village">里</option>
-        <option value="created_at">通報時間</option>
-      </select>
-      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
-    </div>
-
     <!-- 篩選 -->
     <div>
       <label class="font-medium mr-2">行政區：</label>
@@ -51,8 +37,7 @@
       <select id="filterVillage" class="border p-1 rounded">
       </select>
     </div>
-    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
-    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除篩選排序</button>
   </div>
 
   <div class="grid grid-cols-5 gap-4">
@@ -61,8 +46,13 @@
       <table class="w-full text-sm table-auto">
         <thead>
           <tr class="sticky top-[56px] z-20 bg-white border-b font-semibold text-left">
-            <th>序號</th><th>行政區</th><th>里</th><th>地點</th><th>是否需設加水站</th>
-            <th>是否已設加水站</th><th>預估修復時間</th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('id')">序號 <span id="sort-indicator-id"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('district')">行政區 <span id="sort-indicator-district"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('village')">里 <span id="sort-indicator-village"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('location')">地點 <span id="sort-indicator-location"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('water_station')">是否需設加水站 <span id="sort-indicator-water_station"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_water_station_status')">是否已設加水站 <span id="sort-indicator-taiwater_water_station_status"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_eta_hours')">預估修復時間 <span id="sort-indicator-taiwater_eta_hours"></span></th>
           </tr>
         </thead>
         <tbody id="report-table-body">
@@ -71,5 +61,6 @@
       </table>
     </div>
   </div>
+  <script src="../static/water_stats.js"></script>
 </body>
 </html>
