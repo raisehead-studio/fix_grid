@@ -18,7 +18,6 @@
     const userPermissions = {{ user_permissions | tojson }};
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../static/taipower_support.js"></script>
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
@@ -27,19 +26,6 @@
   </div>
 
   <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
-    <!-- 排序 -->
-    <div>
-      <label class="font-medium mr-2">排序依據：</label>
-      <select id="sortField" class="border p-1 rounded">
-        <option value="">無排序</option>
-        <option value="id">序號</option>
-        <option value="district">行政區</option>
-        <option value="village">里</option>
-        <option value="created_at">通報時間</option>
-      </select>
-      <button onclick="toggleSortOrder()" id="sortOrderBtn" class="ml-2 text-blue-600 underline">升序 ⬆️</button>
-    </div>
-
     <!-- 篩選 -->
     <div>
       <label class="font-medium mr-2">行政區：</label>
@@ -51,19 +37,43 @@
       <select id="filterVillage" class="border p-1 rounded">
       </select>
     </div>
-    <button onclick="fetchReports()" class="bg-blue-600 text-white px-3 py-1 rounded">套用</button>
-    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除</button>
+    <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除篩選排序</button>
   </div>
 
   <div class="grid grid-cols-5 gap-4">
     <!-- 左：回報表格 -->
     <div class="col-span-3 bg-white shadow rounded p-4">
-      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所回報</h3>
+      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所通報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
           <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
-            <th>序號</th><th>行政區</th><th>里</th><th>地點</th><th>停電原因</th><th>停電戶數</th>
-            <th>聯絡人</th><th>電話</th><th>通報時間</th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('id')">
+              序號 <span id="sort-indicator-id"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('district')">
+              行政區 <span id="sort-indicator-district"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('village')">
+              里 <span id="sort-indicator-village"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('location')">
+              地點 <span id="sort-indicator-location"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('reason')">
+              停電原因 <span id="sort-indicator-reason"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('count')">
+              停電戶數 <span id="sort-indicator-count"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('contact')">
+              聯絡人 <span id="sort-indicator-contact"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('phone')">
+              電話 <span id="sort-indicator-phone"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('created_at')">
+              通報時間 <span id="sort-indicator-created_at"></span>
+            </th>
           </tr>
         </thead>
         <tbody id="report-table-body">
@@ -74,11 +84,22 @@
 
     <!-- 右：台電狀態表格 -->
     <div class="col-span-2 bg-white shadow rounded p-4">
-      <h3 class="sticky top-[56px] z-40 bg-white text-lg font-medium">台電填報</h3>
+      <h3 class="sticky top-[56px] z-40 bg-white text-lg font-medium">台電回報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
           <tr class="sticky top-[80px] z-30 bg-white border-b font-semibold text-left">
-            <th>回報說明</th><th>預估修復時間</th><th>支援內容</th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('taipower_description')">
+              回報說明 <span id="sort-indicator-taipower_description"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('taipower_eta_hours')">
+              預估修復時間 <span id="sort-indicator-taipower_eta_hours"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('taipower_support')">
+              支援內容 <span id="sort-indicator-taipower_support"></span>
+            </th>
+            <th class="cursor-pointer hover:underline" onclick="setSort('taipower_restored_at')">
+              更新時間 <span id="sort-indicator-taipower_restored_at"></span>
+            </th>
           </tr>
         </thead>
         <tbody id="taipower-table-body">
@@ -87,5 +108,6 @@
       </table>
     </div>
   </div>
+  <script src="../static/taipower_support.js"></script>
 </body>
 </html>

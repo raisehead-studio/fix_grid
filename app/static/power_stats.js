@@ -17,11 +17,16 @@ function syncRowHeights(leftSelector, rightSelector) {
   const leftRows = document.querySelectorAll(leftSelector);
   const rightRows = document.querySelectorAll(rightSelector);
 
-  leftRows.forEach((leftRow, i) => {
-    const height = leftRow.getBoundingClientRect().height;
-    console.log(height)
-    rightRows[i].style.height = `${height}px`;
-  });
+  const rowCount = Math.min(leftRows.length, rightRows.length);
+
+  for (let i = 0; i < rowCount; i++) {
+    const leftHeight = leftRows[i].getBoundingClientRect().height;
+    const rightHeight = rightRows[i].getBoundingClientRect().height;
+    const maxHeight = Math.max(leftHeight, rightHeight);
+
+    leftRows[i].style.height = `${maxHeight}px`;
+    rightRows[i].style.height = `${maxHeight}px`;
+  }
 }
 
 function randomOffset(base, range = 2) {
