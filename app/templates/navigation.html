@@ -45,4 +45,20 @@
       window.location.href = "{{ url_for('logout') }}";
     }
   }
+
+  // 儲存原始 fetch
+  const originalFetch = window.fetch;
+
+  // 替換成包裝過的 fetch
+  window.fetch = async function(...args) {
+    try {
+      showLoading(); // 開啟 loading
+      const response = await originalFetch(...args);
+      return response;
+    } catch (error) {
+      throw error;
+    } finally {
+      hideLoading(); // 無論成功或失敗都關閉 loading
+    }
+  };
 </script>
