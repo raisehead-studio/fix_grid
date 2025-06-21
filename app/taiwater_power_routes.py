@@ -109,7 +109,7 @@ def update_taiwater_taipower_status(id):
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE taiwater_power_reports
-        SET taipower_note = ?, taipower_eta_hours = ?, taipower_support = ?
+        SET taipower_note = ?, taipower_eta_hours = ?, taipower_support = ?, taipower_restored_at = current_timestamp
         WHERE id = ?
     """, (
         data['taipower_note'], data['taipower_eta_hours'], data['taipower_support'], id

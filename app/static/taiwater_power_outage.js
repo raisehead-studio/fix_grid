@@ -1,3 +1,22 @@
+let sortField = '';
+let sortOrder = 'asc';
+
+function syncRowHeights(leftSelector, rightSelector) {
+  const leftRows = document.querySelectorAll(leftSelector);
+  const rightRows = document.querySelectorAll(rightSelector);
+
+  const rowCount = Math.min(leftRows.length, rightRows.length);
+
+  for (let i = 0; i < rowCount; i++) {
+    const leftHeight = leftRows[i].getBoundingClientRect().height;
+    const rightHeight = rightRows[i].getBoundingClientRect().height;
+    const maxHeight = Math.max(leftHeight, rightHeight);
+
+    leftRows[i].style.height = `${maxHeight}px`;
+    rightRows[i].style.height = `${maxHeight}px`;
+  }
+}
+
 function openReportModal() {
   document.getElementById('reportModal').classList.remove('hidden');
 
@@ -43,15 +62,25 @@ document.addEventListener("DOMContentLoaded", () => {
   fetchReports();
 });
 
+const canViewStatus = userPermissions.includes("view_status");
+if (canViewStatus) {
+  document.getElementById('filterMismatch').addEventListener('change', () => fetchReports());
+}
+
 let power_data = {};
 
 async function fetchReports() {
   const res = await fetch('/api/taiwater_power_reports');
-  const canViewStatus = userPermissions.includes("view_status");
   let data = await res.json();
 
-  // 取得排序與篩選設定
-  const selectedSortField = document.getElementById('sortField').value;
+  let hideReportEdit = data.every(e => e.report_status);
+  let hideTaipowerEdit = data.every(e => e.taipower_status);
+
+  // 控制 <th> 顯示與否
+  document.getElementById('th-edit-report').style.display = hideReportEdit ? 'none' : '';
+  if (userPermissions.includes("view_status")) {
+    document.getElementById('th-edit-taipower').style.display = hideTaipowerEdit ? 'none' : '';
+  }
 
   // 篩選處理
   if (canViewStatus) {
@@ -62,10 +91,10 @@ async function fetchReports() {
   }
 
   // 排序處理
-  if (selectedSortField) {
+  if (sortField) {
     data.sort((a, b) => {
-      let aVal = a[selectedSortField];
-      let bVal = b[selectedSortField];
+      let aVal = a[sortField];
+      let bVal = b[sortField];
 
       if (typeof aVal === 'string') aVal = aVal.toLowerCase();
       if (typeof bVal === 'string') bVal = bVal.toLowerCase();
@@ -78,6 +107,10 @@ async function fetchReports() {
 
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
+  const taipowerBody = document.getElementById('taipower-table-body');
+  if (canViewStatus) {
+    taipowerBody.innerHTML = '';
+  }
 
   data.forEach((entry, index) => {
     power_data[entry.id] = entry
@@ -93,13 +126,13 @@ async function fetchReports() {
       <td>${entry.reason}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td>${entry.created_at}</td>
+      <td class="whitespace-nowrap">${entry.created_at}</td>
       <td>
         ${entry.report_status 
-          ? '<span class="text-green-600">已復電</span>' 
+          ? '<span class="text-green-600 whitespace-nowrap">已復電</span>' 
           : (canEditReport 
-              ? `<button onclick="confirmReportRestore(${entry.id})" class="text-red-600 underline">未復電</button>` 
-              : '<span class="text-red-600">未復電</span>')}
+              ? `<button onclick="confirmReportRestore(${entry.id})" class="text-red-600 underline whitespace-nowrap">未復電</button>` 
+              : '<span class="text-red-600 whitespace-nowrap">未復電</span>')}
       </td>
       <td class="text-center">
         ${!entry.report_status && canEditReport 
@@ -112,21 +145,19 @@ async function fetchReports() {
     // 右表格：台電狀態
     if (canViewStatus) {
       const canEditStatus = userPermissions.includes("edit_status");
-      const taipowerBody = document.getElementById('taipower-table-body');
-      if (index == 0) {
-        taipowerBody.innerHTML = '';
-      }
       const statusRow = document.createElement('tr');
       statusRow.className = "border-b";
       statusRow.innerHTML = `
         <td>
           ${entry.taipower_status 
-            ? '<span class="text-green-600">已復電</span>' 
+            ? '<span class="text-green-600 whitespace-nowrap">已復電</span>' 
             : (canEditStatus 
-                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline">未復電</button>` 
-                : '<span class="text-red-600">未復電</span>')}
+                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline whitespace-nowrap">未復電</button>` 
+                : '<span class="text-red-600 whitespace-nowrap">未復電</span>')}
         </td>
-        <td>${entry.taipower_description || '-'}</td>
+        <td>
+          <div class="whitespace-pre-line overflow-x-auto overflow-y-auto max-h-[6em] max-w-[10em]">${entry.taipower_description || '-'}</div>
+        </td>
         <td>${
           entry.taipower_eta_hours
             ? `<span class="${entry.taipower_eta_hours > 24 ? 'text-red-600 font-bold' : ''}">
@@ -135,6 +166,7 @@ async function fetchReports() {
             : '-'
         }</td>
         <td>${entry.taipower_support || '-'}</td>
+        <td class="whitespace-nowrap">${entry.taipower_restored_at ? entry.taipower_restored_at : '-'}</td>
         <td class="text-center">
           ${!entry.taipower_status && canEditStatus 
             ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 
@@ -144,6 +176,12 @@ async function fetchReports() {
       taipowerBody.appendChild(statusRow);
     }
   });
+
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
+    });
+  }, 0);
 }
 
 // Modals
@@ -288,18 +326,34 @@ async function loadFilterVillages(districtId) {
   villages.forEach(v => villageSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`);
 }
 
-let sortField = '';
-let sortOrder = 'asc';
-
-function toggleSortOrder() {
-  sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-  document.getElementById('sortOrderBtn').innerText = sortOrder === 'asc' ? '升序 ⬆️' : '降序 ⬇️';
+function clearFilters() {
+  sortField = '';
+  sortOrder = 'asc';
+  document.getElementById('filterMismatch').checked = false;
+  fetchReports();
 }
 
-function clearFilters() {
-  document.getElementById('sortField').value = '';
-  document.getElementById('filterMismatch').checked = false;
-  document.getElementById('sortOrderBtn').innerText = '升序 ⬆️';
-  sortAscending = true;
+function setSort(field) {
+  if (sortField === field) {
+    sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortOrder = 'asc';
+  }
+  updateSortIndicators();
   fetchReports();
+}
+
+function updateSortIndicators() {
+  const fields = [
+    'id', 'district', 'village', 'location', 'reason', 'count', 'contact', 'phone', 'created_at', 'report_status',
+    'taipower_status', 'taipower_description', 'taipower_eta_hours', 'taipower_support', 'taipower_restored_at',
+    'electricity_number', 'pole_number', 'facility',
+  ];
+  fields.forEach(f => {
+    const el = document.getElementById(`sort-indicator-${f}`);
+    if (el) {
+      el.innerText = (f === sortField) ? (sortOrder === 'asc' ? '⬆️' : '⬇️') : '';
+    }
+  });
 }
