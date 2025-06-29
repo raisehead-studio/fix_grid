@@ -110,6 +110,7 @@ if (canViewStatus) {
 }
 
 let water_data = {};
+let filteredReports = [];
 
 async function fetchReports() {
   const res = await fetch('/api/water_reports');
@@ -169,6 +170,7 @@ async function fetchReports() {
     });
   }
 
+  filteredReports = data;
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
   if (canViewStatus) {
@@ -251,6 +253,62 @@ async function fetchReports() {
       syncRowHeights("#report-table-body tr", "#taiwater-table-body tr");
     });
   }, 0);
+}
+
+// export excel
+function exportToExcel() {
+  if (filteredReports.length === 0) {
+    alert("目前沒有資料可以匯出！");
+    return;
+  }
+
+  const includeTaiwater = canViewStatus;
+
+  const rows = [[
+    "序號", "行政區", "里", "地點", "需加水站", "聯絡人", "電話", "通報時間", "備註", "狀態"
+  ]];
+
+  if (includeTaiwater) {
+    rows[0].push("台水狀態", "說明", "預估修復時間", "加水站", "支援內容", "更新時間");
+  }
+
+  filteredReports.forEach(e => {
+    const row = [
+      e.id,
+      e.district,
+      e.village,
+      e.location,
+      e.water_station === '是' ? '是' : '否',
+      e.contact,
+      e.phone,
+      e.created_at,
+      e.remarks || '-',
+      e.report_status ? '已復水' : '未復水'
+    ];
+
+    if (includeTaiwater) {
+      row.push(
+        e.taiwater_status ? '已復水' : '未復水',
+        e.taiwater_description || '-',
+        e.taiwater_eta_hours != null ? `${e.taiwater_eta_hours} 小時` : '-',
+        e.taiwater_water_station_status === '是' ? '已新增' : '未新增',
+        e.taiwater_support || '-',
+        e.taiwater_restored_at || '-'
+      );
+    }
+
+    rows.push(row);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "停水彙整");
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];  // 2025-06-29-18-00-00
+  const filename = `停水彙整_${timestamp}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
 }
 
 // Modals

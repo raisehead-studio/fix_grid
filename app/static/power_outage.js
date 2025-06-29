@@ -110,6 +110,7 @@ if (canViewStatus) {
 }
 
 let power_data = {};
+let filteredReports = [];
 
 async function fetchReports() {
   const res = await fetch('/api/power_reports');
@@ -168,6 +169,7 @@ async function fetchReports() {
     });
   }
 
+  filteredReports = data;  // 存入供匯出用的資料
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
   if (canViewStatus) {
@@ -247,6 +249,61 @@ async function fetchReports() {
       syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
     });
   }, 0);
+}
+
+// export excel
+function exportToExcel() {
+  if (filteredReports.length === 0) {
+    alert("目前沒有資料可以匯出！");
+    return;
+  }
+
+  const includeTaipower = canViewStatus;
+  const rows = [[
+    "序號", "行政區", "里", "地點", "停電原因", "停電戶數",
+    "聯絡人", "電話", "通報時間", "狀態"
+  ]];
+
+  if (includeTaipower) {
+    rows[0].push("台電狀態", "台電說明", "預估修復時間", "支援內容", "台電更新時間");
+  }
+
+  filteredReports.forEach(e => {
+    const row = [
+      e.id,
+      e.district,
+      e.village,
+      e.location,
+      e.reason,
+      e.count,
+      e.contact,
+      e.phone,
+      e.created_at,
+      e.report_status ? "已復電" : "未復電"
+    ];
+
+    if (includeTaipower) {
+      row.push(
+        e.taipower_status ? "已復電" : "未復電",
+        e.taipower_description || "-",
+        e.taipower_eta_hours != null ? `${e.taipower_eta_hours} 小時` : "-",
+        e.taipower_support || "-",
+        e.taipower_restored_at || "-"
+      );
+    }
+
+    rows.push(row);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "停電彙整");
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];  // yyyy-mm-dd-HH-MM-SS
+  const filename = `停電彙整_${timestamp}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
 }
 
 // Modals
