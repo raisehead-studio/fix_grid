@@ -84,7 +84,7 @@
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('phone')">電話 <span id="sort-indicator-phone"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('created_at')">通報時間 <span id="sort-indicator-created_at"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('remarks')">備註 <span id="sort-indicator-remarks"></span></th>
-            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('report_status')">狀態 <span id="sort-indicator-report_status"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('report_status')">狀態 <span id="sort-indicator-report_status"></span><button id="filterBtnReportStatus" onclick="cycleReportStatusFilter(event)" class="ml-1">❓</button></th>
             <th id="th-edit-report" class="text-center whitespace-nowrap">編輯</th>
           </tr>
         </thead>
@@ -101,7 +101,7 @@
       <table class="w-full text-sm table-auto">
         <thead>
           <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
-            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_status')">狀態 <span id="sort-indicator-taiwater_status"></span></th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_status')">狀態 <span id="sort-indicator-taiwater_status"></span><button id="filterBtnTaipowerStatus" onclick="cycleTaipowerStatusFilter(event)" class="ml-1">❓</button></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_description')">回報說明 <span id="sort-indicator-taiwater_description"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_eta_hours')">預估修復時間 <span id="sort-indicator-taiwater_eta_hours"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_water_station_status')">加水站 <span id="sort-indicator-taiwater_water_station_status"></span></th>

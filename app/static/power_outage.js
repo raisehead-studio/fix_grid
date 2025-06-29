@@ -1,5 +1,39 @@
 let sortField = '';
 let sortOrder = 'asc';
+let reportStatusFilter = 'all';    // 'all' | 'restored' | 'unrestored'
+let taipowerStatusFilter = 'all';  // 'all' | 'restored' | 'unrestored'
+
+function cycleReportStatusFilter(event) {
+  event.stopPropagation();  // 防止觸發排序
+  const btn = document.getElementById('filterBtnReportStatus');
+  if (reportStatusFilter === 'all') {
+    reportStatusFilter = 1;
+    btn.textContent = '⭕️';
+  } else if (reportStatusFilter === 1) {
+    reportStatusFilter = 0;
+    btn.textContent = '❌';
+  } else {
+    reportStatusFilter = 'all';
+    btn.textContent = '❓';
+  }
+  fetchReports();
+}
+
+function cycleTaipowerStatusFilter(event) {
+  event.stopPropagation();  // 防止觸發排序
+  const btn = document.getElementById('filterBtnTaipowerStatus');
+  if (taipowerStatusFilter === 'all') {
+    taipowerStatusFilter = 1;
+    btn.textContent = '⭕️';
+  } else if (taipowerStatusFilter === 1) {
+    taipowerStatusFilter = 0;
+    btn.textContent = '❌';
+  } else {
+    taipowerStatusFilter = 'all';
+    btn.textContent = '❓';
+  }
+  fetchReports();
+}
 
 function syncRowHeights(leftSelector, rightSelector) {
   const leftRows = document.querySelectorAll(leftSelector);
@@ -106,6 +140,17 @@ async function fetchReports() {
     if (mismatchOnly) {
       data = data.filter(e => e.report_status !== e.taipower_status);
     }
+  }
+
+  // 狀態篩選
+  if (reportStatusFilter !== 'all') {
+    console.log(data[0])
+    const target = reportStatusFilter === 1;
+    data = data.filter(e => e.report_status == target);
+  }
+  if (canViewStatus && taipowerStatusFilter !== 'all') {
+    const target = taipowerStatusFilter === 1;
+    data = data.filter(e => e.taipower_status == target);
   }
 
   // 排序處理
@@ -347,9 +392,15 @@ async function loadFilterVillages(districtId) {
 function clearFilters() {
   sortField = '';
   sortOrder = 'asc';
+  reportStatusFilter = 'all';
+  taipowerStatusFilter = 'all';
+  document.getElementById('filterBtnReportStatus').textContent = '❓';
   document.getElementById('filterDistrict').value = '';
   document.getElementById('filterVillage').innerHTML = '<option value="">全部</option>';
-  document.getElementById('filterMismatch').checked = false;
+  if (canViewStatus) {
+    document.getElementById('filterMismatch').checked = false;
+    document.getElementById('filterBtnTaipowerStatus').textContent = '❓';
+  }
   fetchReports();
 }
 

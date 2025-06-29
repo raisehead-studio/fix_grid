@@ -110,6 +110,7 @@
             </th>
             <th class="cursor-pointer hover:underline" onclick="setSort('report_status')">
               狀態 <span id="sort-indicator-report_status"></span>
+              <button id="filterBtnReportStatus" onclick="cycleReportStatusFilter(event)" class="ml-1">❓</button>
             </th>
             <th id="th-edit-report" class="text-center">編輯</th>
           </tr>
@@ -129,6 +130,7 @@
           <tr class="sticky top-[80px] z-30 bg-white border-b font-semibold text-left">
             <th class="cursor-pointer hover:underline" onclick="setSort('taipower_status')">
               狀態 <span id="sort-indicator-taipower_status"></span>
+              <button id="filterBtnTaipowerStatus" onclick="cycleTaipowerStatusFilter(event)" class="ml-1">❓</button>
             </th>
             <th class="cursor-pointer hover:underline" onclick="setSort('taipower_description')">
               回報說明 <span id="sort-indicator-taipower_description"></span>
