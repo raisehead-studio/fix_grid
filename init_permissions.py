@@ -60,6 +60,35 @@ def init_permissions(conn, cursor):
         INSERT INTO "main"."users" ("username", "password", "full_name", "phone", "district_id", "village_id", "role_id", "created_at", "updated_at", "deleted_at") VALUES ('茂林區', 'scrypt:32768:8:1$90lzNDDC87M3jsuN$7886cab1dafeb5a0bb2c32d371ebc5d3674a6463e0ad22c9ebbc4a6e28f73f0c5b738dd40e557639ce1ac9d6cbf515394642d436816ea9fd1abaf6aa346b8f74', '茂林區公所', '000', 36, NULL, 4, NULL, NULL, NULL);
         INSERT INTO "main"."users" ("username", "password", "full_name", "phone", "district_id", "village_id", "role_id", "created_at", "updated_at", "deleted_at") VALUES ('桃源區', 'scrypt:32768:8:1$90lzNDDC87M3jsuN$7886cab1dafeb5a0bb2c32d371ebc5d3674a6463e0ad22c9ebbc4a6e28f73f0c5b738dd40e557639ce1ac9d6cbf515394642d436816ea9fd1abaf6aa346b8f74', '桃源區公所', '000', 37, NULL, 4, NULL, NULL, NULL);
         INSERT INTO "main"."users" ("username", "password", "full_name", "phone", "district_id", "village_id", "role_id", "created_at", "updated_at", "deleted_at") VALUES ('那瑪夏區', 'scrypt:32768:8:1$90lzNDDC87M3jsuN$7886cab1dafeb5a0bb2c32d371ebc5d3674a6463e0ad22c9ebbc4a6e28f73f0c5b738dd40e557639ce1ac9d6cbf515394642d436816ea9fd1abaf6aa346b8f74', '那瑪夏區公所', '000', 38, NULL, 4, NULL, NULL, NULL);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 1);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 2);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 3);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 4);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 5);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 6);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 7);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 8);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 9);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 10);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 11);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 12);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 13);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 14);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 15);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 16);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 17);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 18);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 19);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 20);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 21);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 22);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 23);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 24);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 25);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 26);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 27);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 28);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (1, 29);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (2, 1);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (2, 2);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (2, 3);
@@ -79,15 +108,6 @@ def init_permissions(conn, cursor):
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (2, 27);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (2, 28);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (2, 29);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 7);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 8);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 9);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 10);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 11);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 12);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 15);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 16);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 17);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (4, 7);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (4, 8);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (4, 9);
@@ -97,6 +117,17 @@ def init_permissions(conn, cursor):
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (4, 15);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (4, 16);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (4, 17);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 7);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 8);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 9);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 10);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 11);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 12);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 15);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 16);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 17);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 30);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 31);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 7);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 8);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 9);
@@ -106,8 +137,6 @@ def init_permissions(conn, cursor):
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 20);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 23);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 24);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 27);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 28);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 7);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 8);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 9);
@@ -118,8 +147,6 @@ def init_permissions(conn, cursor):
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 21);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 22);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 23);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 25);
-        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 26);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 29);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 7);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 8);
@@ -141,6 +168,8 @@ def init_permissions(conn, cursor):
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 27);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 28);
         INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 29);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 30);
+        INSERT INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 31);
     """)
     print("✅ 角色帳號初始化完成")
 

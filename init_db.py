@@ -98,6 +98,8 @@ permissions = [
     ('water_stats', 'view'),
     ('taiwater_disaster', 'view'),
     ('taiwater_disaster', 'edit'),
+    ('power_outage', 'excel'),
+    ('water_outage', 'excel'),
 ]
 cursor.executemany("INSERT INTO permissions (page, permission) VALUES (?, ?)", permissions)
 
