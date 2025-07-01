@@ -1,6 +1,7 @@
 import sqlite3
 import os
 
+from datetime import datetime
 from flask import Flask, render_template, redirect, request, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from jinja2 import TemplateNotFound
@@ -32,7 +33,7 @@ def create_app():
     app.register_blueprint(disaster_bp)
 
     class User(UserMixin):
-        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name):
+        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name, ip=None):
             self.id = id
             self.username = username
             self.full_name = full_name
@@ -43,6 +44,17 @@ def create_app():
             self.village = village
             self.role_id = role_id
             self.role_name = role_name
+            self.ip = ip
+
+    def insert_login_log(user_id, ip):
+        conn = sqlite3.connect('kao_power_water.db')
+        c = conn.cursor()
+        c.execute('''
+            INSERT INTO user_login_logs (user_id, ip, login_time)
+            VALUES (?, ?, ?)
+        ''', (user_id, ip, datetime.now()))
+        conn.commit()
+        conn.close()
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -61,9 +73,14 @@ def create_app():
             password = request.form['password']
             user = get_user_by_username(username)
             if user and check_password_hash(user['password'], password):
+                ip = request.remote_addr
+
+                # 記錄登入紀錄
+                insert_login_log(user['id'], ip)
+
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
-                    user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name']
+                    user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], ip=ip
                 ))
                 return redirect(url_for('page_info', page='profile'))
             else:
@@ -132,6 +149,11 @@ def create_app():
             return render_template(target_template, **context)
         except TemplateNotFound:
             return render_template("page_info.html", **context)
+
+    @app.before_request
+    def attach_ip_to_current_user():
+        if current_user.is_authenticated:
+            current_user.ip = request.headers.get("X-Forwarded-For", request.remote_addr)
 
     return app
 

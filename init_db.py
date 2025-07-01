@@ -13,6 +13,7 @@ DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS districts;
 DROP TABLE IF EXISTS villages;
+DROP TABLE IF EXISTS user_login_logs;
 """)
 
 cursor.executescript("""
@@ -64,6 +65,12 @@ AFTER UPDATE ON users
 BEGIN
     UPDATE users SET updated_at = current_timestamp WHERE id = NEW.id;
 END;
+CREATE TABLE user_login_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    ip TEXT NOT NULL,
+    login_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 """)
 roles = ['超級管理員', '管理員', '民政局幹事', '里幹事', '台電人員', '台水人員', '上級長官']
 cursor.executemany("INSERT INTO roles (name) VALUES (?)", [(r,) for r in roles])
