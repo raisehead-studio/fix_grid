@@ -97,9 +97,6 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 15);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 16);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 17);
-        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 30);
-        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 31);
-        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 32);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 9);
@@ -109,8 +106,6 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 20);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 23);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 24);
-        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 30);
-        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 32);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 9);
@@ -122,7 +117,6 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 22);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 23);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 29);
-        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 31);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 9);
