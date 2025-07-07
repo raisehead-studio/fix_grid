@@ -18,14 +18,20 @@
     const userPermissions = {{ user_permissions | tojson }};
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="p-4 flex justify-between">
     <h2 class="text-xl font-bold">台水公司停電彙整表</h2>
-    {% if 'create_report' in user_permissions %}
-    <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
-    {% endif %}
+    <div class="flex gap-2">
+      {% if 'excel' in user_permissions %}
+      <button onclick="exportToExcel()" class="bg-gray-500 text-white px-4 py-2 rounded">匯出 Excel</button>
+      {% endif %}
+      {% if 'create_report' in user_permissions %}
+      <button class="bg-blue-600 text-white px-4 py-2 rounded" onclick="openReportModal()">回報</button>
+      {% endif %}
+    </div>
   </div>
 
   <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">

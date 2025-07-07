@@ -1,5 +1,6 @@
 let sortField = '';
 let sortOrder = 'asc';
+let filteredReports = [];
 
 function syncRowHeights(leftSelector, rightSelector) {
   const leftRows = document.querySelectorAll(leftSelector);
@@ -105,6 +106,7 @@ async function fetchReports() {
     });
   }
 
+  filteredReports = data;
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
   const taipowerBody = document.getElementById('taipower-table-body');
@@ -182,6 +184,59 @@ async function fetchReports() {
       syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
     });
   }, 0);
+}
+
+function exportToExcel() {
+  if (filteredReports.length === 0) {
+    alert("目前沒有資料可以匯出！");
+    return;
+  }
+
+  const includeTaipower = canViewStatus;
+
+  const rows = [[
+    "序號", "設施名稱", "桿號", "電號", "停電原因", "聯絡人", "電話", "通報時間", "狀態"
+  ]];
+
+  if (includeTaipower) {
+    rows[0].push("台電狀態", "說明", "預估修復時間", "支援內容", "更新時間");
+  }
+
+  filteredReports.forEach(e => {
+    const row = [
+      e.id,
+      e.facility,
+      e.pole_number,
+      e.electricity_number,
+      e.reason,
+      e.contact,
+      e.phone,
+      e.created_at,
+      e.report_status ? '已復電' : '未復電'
+    ];
+
+    if (includeTaipower) {
+      row.push(
+        e.taipower_status ? '已復電' : '未復電',
+        e.taipower_description || '-',
+        e.taipower_eta_hours != null ? `${e.taipower_eta_hours} 小時` : '-',
+        e.taipower_support || '-',
+        e.taipower_restored_at || '-'
+      );
+    }
+
+    rows.push(row);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "台水停電通報");
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0]; // 例如 2025-06-29-15-00-00
+  const filename = `台水停電通報_${timestamp}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
 }
 
 // Modals

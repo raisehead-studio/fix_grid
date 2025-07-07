@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash
 
 def init_permissions(conn, cursor):
-    for pid in range(1, 32):
+    for pid in range(1, 33):
       cursor.execute("""
           INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
           VALUES (?, ?)
@@ -99,6 +99,7 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 17);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 30);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 31);
+        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (3, 32);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 9);
@@ -109,6 +110,7 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 23);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 24);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 30);
+        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 32);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 9);
@@ -120,6 +122,7 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 22);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 23);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 29);
+        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 31);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 9);
@@ -142,6 +145,7 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 29);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 30);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 31);
+        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (7, 32);
     """)
     print("✅ 角色帳號初始化完成")
 
