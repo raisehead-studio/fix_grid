@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS taiwater_power_reports;
+-- DROP TABLE IF EXISTS taiwater_power_reports;
 CREATE TABLE IF NOT EXISTS taiwater_power_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     facility TEXT NOT NULL,

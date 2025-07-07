@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  flask:
+    build: .
+    container_name: flask-app
+    restart: always
+    working_dir: /app
+    volumes:
+      - .:/app
+    expose:
+      - "5000"
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - flask

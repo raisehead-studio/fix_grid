@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS power_reports;
+-- DROP TABLE IF EXISTS power_reports;
 CREATE TABLE IF NOT EXISTS power_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     district_id INTEGER NOT NULL,

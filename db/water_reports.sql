@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS water_reports;
+-- DROP TABLE IF EXISTS water_reports;
 CREATE TABLE IF NOT EXISTS water_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     district_id INTEGER NOT NULL,
