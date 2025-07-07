@@ -18,11 +18,17 @@
     const userPermissions = {{ user_permissions | tojson }};
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="p-4 flex justify-between">
     <h2 class="text-xl font-bold">台電支援需求彙整表</h2>
+    <div class="flex gap-2">
+      <button onclick="exportToExcel()" class="bg-gray-500 text-white px-4 py-2 rounded">
+        匯出 Excel
+      </button>
+    </div>
   </div>
 
   <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">

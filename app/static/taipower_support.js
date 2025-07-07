@@ -1,5 +1,6 @@
 let sortField = '';
 let sortOrder = 'asc';
+let filteredReports = [];
 
 function syncRowHeights(leftSelector, rightSelector) {
   const leftRows = document.querySelectorAll(leftSelector);
@@ -57,6 +58,7 @@ async function fetchReports() {
     });
   }
 
+  filteredReports = data;
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
   const taipowerBody = document.getElementById('taipower-table-body');
@@ -102,6 +104,42 @@ async function fetchReports() {
       syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
     });
   }, 0);
+}
+
+function exportToExcel() {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `台電支援需求彙整表_${timestamp}.xlsx`;
+
+  const rows = [[
+    // 左表（公所通報）
+    "序號", "行政區", "里", "地點", "停電原因", "停電戶數", "聯絡人", "電話", "通報時間",
+    // 右表（台電回報）
+    "回報說明", "預估修復時間", "支援內容", "更新時間"
+  ]];
+
+  filteredReports.forEach(entry => {
+    rows.push([
+      entry.id,
+      entry.district,
+      entry.village,
+      entry.location,
+      entry.reason,
+      entry.count,
+      entry.contact,
+      entry.phone,
+      entry.created_at,
+      entry.taipower_description || "-",
+      entry.taipower_eta_hours != null ? `${entry.taipower_eta_hours} 小時` : "-",
+      entry.taipower_support || "-",
+      entry.taipower_restored_at || "-"
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const sheet = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, sheet, "台電支援需求");
+  XLSX.writeFile(wb, filename);
 }
 
 window.onload = async () => {
