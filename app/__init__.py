@@ -98,19 +98,32 @@ def create_app():
         logout_user()
         return redirect(url_for('login'))
 
-    # @app.route('/page/<page>')
-    # @login_required
-    # def page_info(page):
-    #     all_permissions = get_role_page_permissions_from_db()
-    #     role_name = current_user.role_name
-    #     role_pages = all_permissions.get(role_name, {})
-    #     actions = role_pages.get(page, [])
-    #     return render_template('page_info.html',
-    #                         role=role_name,
-    #                         current_page=page,
-    #                         actions=actions,
-    #                         pages=role_pages,
-    #                         page_name_map=page_name_map)
+    @app.route("/api/login_logs/<int:user_id>")
+    @login_required
+    def get_login_logs_by_user(user_id):
+        if current_user.role_id != 1 and current_user.id != user_id:
+            return {"error": "Unauthorized access"}, 403
+
+        conn = sqlite3.connect("kao_power_water.db")
+        c = conn.cursor()
+        c.execute("""
+            SELECT ip, login_time
+            FROM user_login_logs
+            WHERE user_id = ?
+            ORDER BY login_time DESC
+            LIMIT 100
+        """, (user_id,))
+        logs = []
+        for row in c.fetchall():
+            ip, raw_time = row
+            try:
+                parsed_time = datetime.fromisoformat(raw_time)
+                formatted_time = parsed_time.strftime('%Y-%m-%d %H:%M:%S')
+            except:
+                formatted_time = raw_time  # fallback in case of error
+            logs.append({"ip": ip, "login_time": formatted_time})
+        conn.close()
+        return {"logs": logs}
 
     @app.route('/page/<page>')
     @login_required

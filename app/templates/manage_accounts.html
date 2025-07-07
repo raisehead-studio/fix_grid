@@ -18,7 +18,10 @@
           <td class="p-2">${user.role_name}</td>
           <td class="p-2">${user.district_name}</td>
           <td class="p-2">
-            ${user.role_name === "超級管理員" ? "" : `<span class="text-red-500 hover:underline cursor-pointer" onclick="deleteUser(${user.id})">刪除</span>`}
+            <div class="flex items-center space-x-6">
+              <button class="text-blue-600 hover:underline" onclick="showLoginLogs(${user.id}, '${user.full_name}')">登入記錄</button>
+              ${user.role_name === "超級管理員" ? "" : `<span class="text-red-500 hover:underline cursor-pointer" onclick="deleteUser(${user.id})">刪除</span>`}
+            </div>
           </td>
         `;
         tbody.appendChild(row);
@@ -108,6 +111,34 @@
       document.getElementById('new-role').value = '';
       document.getElementById('new-district').value = '';
     }
+
+    async function showLoginLogs(userId, username) {
+      const res = await fetch(`/api/login_logs/${userId}`);
+      const { logs } = await res.json();
+
+      document.getElementById('logModalTitle').innerText = `登入記錄：${username}`;
+      const tbody = document.getElementById('login-log-body');
+      tbody.innerHTML = '';
+
+      if (logs.length === 0) {
+        tbody.innerHTML = `<tr><td class="p-2 border text-center" colspan="2">無登入紀錄</td></tr>`;
+      } else {
+        logs.forEach(log => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td class="p-2 border">${log.ip}</td>
+            <td class="p-2 border">${log.login_time}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('loginLogModal').classList.remove('hidden');
+    }
+
+    function closeLoginLogModal() {
+      document.getElementById('loginLogModal').classList.add('hidden');
+    }
   </script>
 </head>
 <body class="bg-gray-100">
@@ -123,7 +154,7 @@
           <th class="p-2">姓名</th>
           <th class="p-2">角色</th>
           <th class="p-2">區</th>
-          <th class="p-2">操作</th>
+          <th class="p-2 w-40">操作</th>
         </tr>
       </thead>
       <tbody id="user-table-body"></tbody>
@@ -183,6 +214,24 @@
         <button onclick="document.getElementById('createModal').classList.add('hidden')"
                 class="px-4 py-1 bg-gray-300 rounded">取消</button>
         <button onclick="createUser()" class="px-4 py-1 bg-green-600 text-white rounded">建立</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loginLogModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50" onclick="closeLoginLogModal()">
+    <div class="bg-white p-6 rounded shadow-lg w-[600px] max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <h2 id="logModalTitle" class="text-xl font-bold mb-4">登入記錄</h2>
+      <table class="w-full table-auto border">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2 border">IP</th>
+            <th class="p-2 border">時間</th>
+          </tr>
+        </thead>
+        <tbody id="login-log-body"></tbody>
+      </table>
+      <div class="text-right mt-4">
+        <button onclick="closeLoginLogModal()" class="px-4 py-2 bg-gray-300 rounded">關閉</button>
       </div>
     </div>
   </div>

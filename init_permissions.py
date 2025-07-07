@@ -108,6 +108,7 @@ def init_permissions(conn, cursor):
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 20);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 23);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 24);
+        INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (5, 30);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 7);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 8);
         INSERT OR IGNORE INTO "main"."role_permissions" ("role_id", "permission_id") VALUES (6, 9);

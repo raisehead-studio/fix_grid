@@ -40,6 +40,9 @@
       {% if current_user.ip %}
         <p><strong>登入 IP：</strong>{{ current_user.ip }}</p>
       {% endif %}
+      <div class="mt-6">
+        <button onclick="showOwnLoginLogs()" class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">查看登入記錄</button>
+      </div>
     </div>
   </div>
 
@@ -84,6 +87,24 @@
         <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">儲存</button>
       </div>
     </form>
+  </div>
+
+  <div id="loginLogModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50" onclick="closeLoginLogModal()">
+    <div class="bg-white p-6 rounded shadow-lg w-[600px] max-h-[80vh] overflow-y-auto" onclick="event.stopPropagation()">
+      <h2 class="text-xl font-bold mb-4">登入記錄</h2>
+      <table class="w-full table-auto border">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="p-2 border">IP</th>
+            <th class="p-2 border">時間</th>
+          </tr>
+        </thead>
+        <tbody id="login-log-body"></tbody>
+      </table>
+      <div class="text-right mt-4">
+        <button onclick="closeLoginLogModal()" class="px-4 py-2 bg-gray-300 rounded">關閉</button>
+      </div>
+    </div>
   </div>
 </body>
 </html>
@@ -145,6 +166,33 @@ function openEditModal() {
 }
 function closeEditModal() {
   document.getElementById("editModal").classList.add("hidden");
+}
+
+function closeLoginLogModal() {
+  document.getElementById('loginLogModal').classList.add('hidden');
+}
+
+async function showOwnLoginLogs() {
+  const userId = {{ current_user.id }};
+  const res = await fetch(`/api/login_logs/${userId}`);
+  const { logs } = await res.json();
+  const tbody = document.getElementById('login-log-body');
+  tbody.innerHTML = '';
+
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td class="p-2 border text-center" colspan="2">無登入紀錄</td></tr>`;
+  } else {
+    logs.forEach(log => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="p-2 border">${log.ip}</td>
+        <td class="p-2 border">${log.login_time}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('loginLogModal').classList.remove('hidden');
 }
 </script>
 {% endblock %}
