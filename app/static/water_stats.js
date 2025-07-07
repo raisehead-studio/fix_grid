@@ -1,5 +1,6 @@
 let sortField = '';
 let sortOrder = 'asc';
+let filteredReports = [];
 
 function syncRowHeights(leftSelector, rightSelector) {
   const leftRows = document.querySelectorAll(leftSelector);
@@ -65,6 +66,7 @@ async function fetchReports() {
     });
   }
 
+  filteredReports = data;
   const reportBody = document.getElementById('report-table-body');
   reportBody.innerHTML = '';
 
@@ -96,6 +98,39 @@ async function fetchReports() {
       syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
     });
   }, 0);
+}
+
+function exportToExcel() {
+  if (filteredReports.length === 0) {
+    alert("目前沒有資料可以匯出！");
+    return;
+  }
+
+  const rows = [[
+    "序號", "行政區", "里", "地點", "需加水站", "已設加水站", "預估修復時間"
+  ]];
+
+  filteredReports.forEach(entry => {
+    rows.push([
+      entry.id,
+      entry.district,
+      entry.village,
+      entry.location,
+      entry.water_station === '是' ? '是' : '否',
+      entry.taiwater_water_station_status === '是' ? '是' : '否',
+      entry.taiwater_eta_hours != null ? `${entry.taiwater_eta_hours} 小時` : '-'
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "停水彙整");
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0]; // e.g. 2025-06-29-18-22-10
+  const filename = `停水彙整_${timestamp}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
 }
 
 window.onload = async () => {
