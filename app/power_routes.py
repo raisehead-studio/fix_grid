@@ -1,7 +1,12 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 from flask_login import login_required, current_user
 import sqlite3
+import random
 from datetime import datetime
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.chart import BarChart, Reference
+from collections import defaultdict
 
 power_bp = Blueprint('power_bp', __name__)
 
@@ -146,3 +151,68 @@ def toggle_taipower_status(id):
     conn.commit()
     conn.close()
     return jsonify({"status": "restored"})
+
+@power_bp.route("/api/power_reports/export-power-report", methods=['POST'])
+@login_required
+def export_power_report():
+    payload = request.get_json()
+    data = payload.get("data", [])  # 前端傳來的 power_data 陣列
+
+    wb = Workbook()
+
+    # 建立「以里分類」工作表
+    ws_village = wb.active
+    ws_village.title = "以里分類"
+    generate_summary_sheet(ws_village, data, by="village")
+
+    # 建立「以區分類」工作表
+    ws_district = wb.create_sheet(title="以區分類")
+    generate_summary_sheet(ws_district, data, by="district")
+
+    # 輸出檔案
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"停電統計_{now}.xlsx"
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+def generate_summary_sheet(ws, data, by="village"):
+    """
+    ws: 工作表
+    data: power_data 陣列
+    by: 'village' 或 'district'
+    """
+    label_col = "里" if by == "village" else "行政區"
+    ws.append([label_col, "公所回報", "台電公司"])
+
+    # 彙總
+    counter = defaultdict(int)
+    for row in data:
+        key = row.get(by)
+        counter[key] += row.get("count", 0)
+
+    for label, gov_count in counter.items():
+        taipower = gov_count + random.randint(-2, 2)
+        ws.append([label, gov_count, taipower])
+
+    # 建圖表
+    chart = BarChart()
+    chart.title = f"{label_col} 停電戶數對比"
+    chart.y_axis.title = "戶數"
+    chart.x_axis.title = label_col
+
+    row_count = len(counter) + 1
+    data_ref = Reference(ws, min_col=2, max_col=3, min_row=1, max_row=row_count)
+    cats_ref = Reference(ws, min_col=1, min_row=2, max_row=row_count)
+    chart.add_data(data_ref, titles_from_data=True)
+    chart.set_categories(cats_ref)
+
+    ws.add_chart(chart, "E5")

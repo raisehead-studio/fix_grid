@@ -19,13 +19,15 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="../static/power_stats.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-populate/browser/xlsx-populate.min.js"></script>
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="p-4 flex justify-between items-center">
     <h2 class="text-xl font-bold">停電彙整表</h2>
     <div class="space-x-2">
+      <button onclick="exportToExcelViaBackend()" class="px-4 py-2 bg-gray-500 text-white rounded">匯出 Excel</button>
       <button onclick="switchMode('village')" class="px-4 py-2 bg-blue-600 text-white rounded">以里分類</button>
       <button onclick="switchMode('district')" class="px-4 py-2 bg-gray-600 text-white rounded">以區分類</button>
     </div>
@@ -58,4 +60,5 @@
     </div>
   </div>
 </body>
+<script src="../static/power_stats.js"></script>
 </html>

@@ -161,3 +161,26 @@ function renderChart(labels, data1, data2) {
     }
   });
 }
+
+function exportToExcelViaBackend() {
+  fetch("/api/power_reports/export-power-report", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      data: power_data
+    })
+  })
+  .then(response => response.blob())
+  .then(blob => {
+    const now = new Date();
+    const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+    const filename = `停電統計_${timestamp}.xlsx`;
+
+    const link = document.createElement("a");
+    link.href = window.URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+  });
+}
