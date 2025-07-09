@@ -4,3 +4,4 @@ __pycache__
 .flaskenv
 .DS_Store
 uploads
+libs/

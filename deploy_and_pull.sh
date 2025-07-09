@@ -3,8 +3,16 @@ set -e
 
 echo "Starting deployment..."
 
-docker compose down
+# 更新專案
 git pull origin main
-docker compose up -d --build
+
+# 解壓縮 libs.zip 到 libs/
+echo "Unzipping dependencies..."
+rm -rf libs  # 先清空舊的 libs（若存在）
+unzip -q libs.zip -d libs
+
+# 執行應用程式
+echo "Running app..."
+python3 app.py
 
 echo "Deployment complete!"
