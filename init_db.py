@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs'))
+
 import sqlite3
 from init_districts import init_districts
 from init_permissions import init_permissions
