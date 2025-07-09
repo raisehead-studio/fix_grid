@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs.zip'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs'))
 
 from app import create_app
 
