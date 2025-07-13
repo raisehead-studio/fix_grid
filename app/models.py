@@ -8,7 +8,8 @@ def get_user_by_username(username):
         SELECT 
             users.id, users.username, users.password, users.full_name, 
             users.phone, users.district_id, districts.name, users.village_id, villages.name, users.role_id, 
-            roles.name AS role_name
+            roles.name AS role_name,
+            users.password_updated_at
         FROM users
         LEFT JOIN roles ON users.role_id = roles.id
         LEFT JOIN districts ON users.district_id = districts.id
@@ -31,7 +32,8 @@ def get_user_by_username(username):
             'village_id': row[7],
             'village': row[8],
             'role_id': row[9],
-            'role_name': row[10]
+            'role_name': row[10],
+            'password_updated_at': row[11],
         }
     return None
 
@@ -41,7 +43,8 @@ def get_user_by_id_with_role(user_id):
     cursor.execute("""
         SELECT users.id, users.username, users.password, users.full_name, 
             users.phone, users.district_id, districts.name, users.village_id, villages.name, users.role_id, 
-            roles.name AS role_name
+            roles.name AS role_name,
+            users.password_updated_at
         FROM users
         LEFT JOIN roles ON users.role_id = roles.id
         LEFT JOIN districts ON users.district_id = districts.id
@@ -63,7 +66,8 @@ def get_user_by_id_with_role(user_id):
             'village_id': row[7],
             'village': row[8],
             'role_id': row[9],
-            'role_name': row[10]
+            'role_name': row[10],
+            'password_updated_at': row[11],
         }
     return None
 

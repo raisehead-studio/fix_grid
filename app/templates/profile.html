@@ -159,11 +159,23 @@ document.addEventListener("DOMContentLoaded", function () {
   //       });
   //     });
   // }
+
+  // 加入密碼更新時間檢查
+  const passwordUpdatedAt = "{{ current_user.password_updated_at }}";
+  if (passwordUpdatedAt) {
+    const updatedDate = new Date(passwordUpdatedAt);
+    const now = new Date();
+    const diffDays = (now - updatedDate) / (1000 * 60 * 60 * 24);
+    if (diffDays > 90) {
+      alert("您的密碼已超過 90 天未變更，請盡快更新密碼");
+    }
+  }
 });
 
 function openEditModal() {
   document.getElementById("editModal").classList.remove("hidden");
 }
+
 function closeEditModal() {
   document.getElementById("editModal").classList.add("hidden");
 }
@@ -193,6 +205,76 @@ async function showOwnLoginLogs() {
   }
 
   document.getElementById('loginLogModal').classList.remove('hidden');
+}
+
+document.getElementById("editForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const phone = document.getElementById("phone").value.trim();
+  const district = document.getElementById("district").value;
+  const oldPw = document.getElementById("old_password").value.trim();
+  const newPw = document.getElementById("new_password").value.trim();
+  const confirmPw = document.getElementById("confirm_password").value.trim();
+
+  // 若有要改密碼（其中任一欄有輸入）
+  if (oldPw || newPw || confirmPw) {
+    // 檢查是否有填完三欄
+    if (!oldPw || !newPw || !confirmPw) {
+      alert("請完整填寫舊密碼、新密碼與確認密碼");
+      e.preventDefault();
+      return;
+    }
+
+    // 檢查新密碼與確認密碼是否一致
+    if (newPw !== confirmPw) {
+      alert("新密碼與確認密碼不一致");
+      e.preventDefault();
+      return;
+    }
+
+    // 檢查密碼複雜度
+    const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{12,}$/;
+    if (!pwRegex.test(newPw)) {
+      alert("密碼需至少12碼，包含大小寫英文、數字與特殊符號");
+      e.preventDefault();
+      return;
+    }
+  }
+
+  const formData = {
+    phone,
+    district,
+    old_password: oldPw,
+    new_password: newPw,
+    confirm_password: confirmPw
+  };
+
+  const res = await fetch("/profile", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData)
+  });
+
+  const result = await res.json();
+  showModalMessage(result.message, result.status);
+});
+
+function showModalMessage(msg, status) {
+  const color = status === "success" ? "bg-green-600" : "bg-red-600";
+  const container = document.createElement("div");
+  container.className = `mb-2 px-3 py-2 rounded text-white text-sm ${color}`;
+  container.textContent = msg;
+
+  const form = document.getElementById("editForm");
+  const oldMsg = form.querySelector(".modal-message");
+  if (oldMsg) oldMsg.remove();
+
+  container.classList.add("modal-message");
+  form.prepend(container);
+
+  document.getElementById("old_password").value = "";
+  document.getElementById("new_password").value = "";
+  document.getElementById("confirm_password").value = "";
 }
 </script>
 {% endblock %}

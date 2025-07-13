@@ -47,6 +47,7 @@ def delete_account(user_id):
 
 # 取得所有角色
 @account_bp.route('/api/roles')
+@login_required
 def get_roles():
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
@@ -57,6 +58,7 @@ def get_roles():
 
 # 取得所有行政區
 @account_bp.route('/api/districts')
+@login_required
 def get_districts():
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
@@ -67,6 +69,7 @@ def get_districts():
 
 # 依區取得里
 @account_bp.route('/api/villages/<int:district_id>')
+@login_required
 def get_villages(district_id):
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
@@ -77,12 +80,13 @@ def get_villages(district_id):
 
 # 建立新帳號
 @account_bp.route('/api/create_account', methods=['POST'])
+@login_required
 def create_account():
     data = request.get_json()
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO users (username, password, full_name, phone, role_id, district_id) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO users (username, password, full_name, phone, role_id, district_id, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
         (
             data['username'],
             generate_password_hash(data['password']),
@@ -101,53 +105,50 @@ def create_account():
 def profile():
     user_id = current_user.id
 
-    if request.method == "POST":
+    if request.content_type == "application/json":
+        data = request.get_json()
+        phone = data.get("phone")
+        district_id = data.get("district")
+        old_pw = data.get("old_password")
+        new_pw = data.get("new_password")
+        confirm_pw = data.get("confirm_password")
+    else:
+        # fallback，如果未來還有使用表單方式
         phone = request.form.get("phone")
         district_id = request.form.get("district")
-        village_id = request.form.get("village")
         old_pw = request.form.get("old_password")
         new_pw = request.form.get("new_password")
         confirm_pw = request.form.get("confirm_password")
 
-        conn = sqlite3.connect("kao_power_water.db")
-        cursor = conn.cursor()
+    conn = sqlite3.connect("kao_power_water.db")
+    cursor = conn.cursor()
 
-        # 取得目前密碼 hash
-        cursor.execute("SELECT password FROM users WHERE id = ?", (user_id,))
-        row = cursor.fetchone()
-        if not row:
-            flash("找不到使用者", "error")
-            conn.close()
-            return redirect(url_for('page_info', page='profile'))
-
-        current_hashed_pw = row[0]
-
-        # 更新基本資料
-        cursor.execute("""
-            UPDATE users SET phone = ?, district_id = ?, village_id = ?
-            WHERE id = ?
-        """, (phone, district_id, village_id, user_id))
-
-        # 若有密碼欄位，進行驗證與更新
-        if old_pw or new_pw or confirm_pw:
-            if not check_password_hash(current_hashed_pw, old_pw):
-                flash("舊密碼錯誤", "error")
-                conn.close()
-                return redirect(url_for('page_info', page='profile'))
-
-            if new_pw != confirm_pw:
-                flash("新密碼與確認密碼不一致", "error")
-                conn.close()
-                return redirect(url_for('page_info', page='profile'))
-
-            new_hashed_pw = generate_password_hash(new_pw)
-            cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_hashed_pw, user_id))
-            flash("密碼已更新", "success")
-
-        conn.commit()
+    cursor.execute("SELECT password FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    if not row:
         conn.close()
+        return jsonify({"status": "error", "message": "找不到使用者"}), 404
 
-        flash("個人資料已更新", "success")
-        return redirect(url_for('page_info', page='profile'))
+    current_hashed_pw = row[0]
 
-    return redirect(url_for('page_info', page='profile'))
+    # 更新基本資料
+    cursor.execute("UPDATE users SET phone = ?, district_id = ? WHERE id = ?", (phone, district_id, user_id))
+
+    # 如果有密碼欄位要改
+    if old_pw or new_pw or confirm_pw:
+        if not check_password_hash(current_hashed_pw, old_pw):
+            conn.close()
+            return jsonify({"status": "error", "message": "舊密碼錯誤"})
+
+        if new_pw != confirm_pw:
+            conn.close()
+            return jsonify({"status": "error", "message": "新密碼與確認密碼不一致"})
+
+        cursor.execute(
+            "UPDATE users SET password = ?, password_updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (generate_password_hash(new_pw), user_id)
+        )
+
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "success", "message": "個人資料已更新"})

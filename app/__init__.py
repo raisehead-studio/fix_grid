@@ -33,7 +33,7 @@ def create_app():
     app.register_blueprint(disaster_bp)
 
     class User(UserMixin):
-        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name, ip=None):
+        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name, password_updated_at, ip=None):
             self.id = id
             self.username = username
             self.full_name = full_name
@@ -44,6 +44,7 @@ def create_app():
             self.village = village
             self.role_id = role_id
             self.role_name = role_name
+            self.password_updated_at = password_updated_at
             self.ip = ip
 
     def insert_login_log(user_id, ip):
@@ -62,7 +63,7 @@ def create_app():
         if user:
             return User(
                 user['id'], user['username'], user['full_name'], user['phone'],
-                user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name']
+                user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], user['password_updated_at']
             )
         return None
 
@@ -80,7 +81,7 @@ def create_app():
 
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
-                    user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], ip=ip
+                    user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], user['password_updated_at'], ip=ip
                 ))
                 return redirect(url_for('page_info', page='profile'))
             else:

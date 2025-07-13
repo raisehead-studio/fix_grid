@@ -60,6 +60,7 @@ CREATE TABLE users (
     created_at DATETIME DEFAULT current_timestamp,
     updated_at DATETIME DEFAULT current_timestamp,
     deleted_at DATETIME,
+    password_updated_at DATETIME DEFAULT current_timestamp,
     FOREIGN KEY(role_id) REFERENCES roles(id),
     FOREIGN KEY(district_id) REFERENCES districts(id),
     FOREIGN KEY(village_id) REFERENCES villages(id)

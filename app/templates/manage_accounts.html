@@ -73,6 +73,13 @@
         return;
       }
 
+      // 驗證：密碼格式
+      const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{12,}$/;
+      if (!pwRegex.test(password)) {
+        alert("密碼需至少12碼，包含大小寫英文、數字與特殊符號");
+        return;
+      }
+
       const payload = {
         username,
         password,
