@@ -76,6 +76,14 @@ CREATE TABLE user_login_logs (
     ip TEXT NOT NULL,
     login_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS taipower_reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  district_id INTEGER,
+  village_id INTEGER,
+  count INTEGER,
+  created_by INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """)
 roles = ['超級管理員', '管理員', '民政局幹事', '里幹事', '台電人員', '台水人員', '上級長官']
 cursor.executemany("INSERT INTO roles (name) VALUES (?)", [(r,) for r in roles])

@@ -27,15 +27,16 @@
   <div class="p-4 flex justify-between items-center">
     <h2 class="text-xl font-bold">停電彙整表</h2>
     <div class="space-x-2">
+      <button onclick="showTaipowerModal()" class="px-4 py-2 bg-green-600 text-white rounded">台電回報</button>
       <button onclick="exportToExcelViaBackend()" class="px-4 py-2 bg-gray-500 text-white rounded">匯出 Excel</button>
-      <button onclick="switchMode('village')" class="px-4 py-2 bg-blue-600 text-white rounded">以里分類</button>
-      <button onclick="switchMode('district')" class="px-4 py-2 bg-gray-600 text-white rounded">以區分類</button>
+      <button id="btn-district" onclick="switchMode('district')" class="px-4 py-2 text-white rounded">以區分類</button>
+      <button id="btn-village" onclick="switchMode('village')" class="px-4 py-2 text-white rounded">以里分類</button>
     </div>
   </div>
 
-  <div class="grid grid-cols-5 gap-4 p-4">
-    <div class="col-span-2 grid grid-cols-4 gap-4">
-      <div class="col-span-3 bg-white shadow rounded p-4">
+  <div class="grid grid-cols-7 gap-4 p-4">
+    <div class="col-span-4 grid grid-cols-4 gap-4">
+      <div class="col-span-2 bg-white shadow rounded p-4">
         <h3 class="text-lg font-semibold mb-2">公所回報資料</h3>
         <table class="w-full text-sm table-auto">
           <thead id="left-table-head" class="text-left"></thead>
@@ -43,12 +44,10 @@
         </table>
       </div>
 
-      <div class="col-span-1 bg-white shadow rounded p-4">
-        <h3 class="text-lg font-semibold mb-2">台電官網</h3>
+      <div class="col-span-2 bg-white shadow rounded p-4">
+        <h3 class="text-lg font-semibold mb-2">台電真實回報</h3>
         <table class="w-full text-sm table-auto">
-          <thead>
-            <tr class="text-left"><th>停電戶數</th></tr>
-          </thead>
+          <thead id="right-table-head" class="text-left"></thead>
           <tbody id="right-table-body"></tbody>
         </table>
       </div>
@@ -57,6 +56,26 @@
     <div class="col-span-3 bg-white shadow rounded p-4">
       <h3 class="text-lg font-semibold mb-2">視覺化圖表</h3>
       <canvas id="power-chart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- 台電回報 Modal -->
+  <div id="taipowerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded shadow w-[400px]">
+      <h3 class="text-lg font-semibold mb-4">台電回報</h3>
+      <label class="block mb-2">行政區</label>
+      <select id="taipowerDistrict" class="w-full mb-4 border p-2" onchange="loadVillagesForTaipower()"></select>
+
+      <label class="block mb-2">里</label>
+      <select id="taipowerVillage" class="w-full mb-4 border p-2"></select>
+
+      <label class="block mb-2">停電戶數</label>
+      <input id="taipowerCount" type="number" class="w-full mb-4 border p-2" />
+
+      <div class="flex justify-end gap-2">
+        <button onclick="hideTaipowerModal()" class="bg-gray-400 text-white px-4 py-2 rounded">取消</button>
+        <button onclick="submitTaipowerReport()" class="bg-green-600 text-white px-4 py-2 rounded">送出</button>
+      </div>
     </div>
   </div>
 </body>

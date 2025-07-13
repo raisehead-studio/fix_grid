@@ -156,20 +156,34 @@ def toggle_taipower_status(id):
 @login_required
 def export_power_report():
     payload = request.get_json()
-    data = payload.get("data", [])  # 前端傳來的 power_data 陣列
+    data = payload.get("data", [])
+
+    gov_data = []
+    tp_data = []
+
+    for row in data:
+        if row.get("gov_count", 0) > 0:
+            gov_data.append({
+                "district": row["district"],
+                "village": row["village"],
+                "gov_count": row["gov_count"]
+            })
+        if row.get("tp_count", 0) > 0:
+            tp_data.append({
+                "district": row["district"],
+                "village": row["village"],
+                "tp_count": row["tp_count"]
+            })
 
     wb = Workbook()
+    ws_district = wb.active
+    ws_district.title = "以區分類"
+    generate_summary_sheet(ws_district, gov_data, tp_data, by="district")
 
-    # 建立「以里分類」工作表
-    ws_village = wb.active
-    ws_village.title = "以里分類"
-    generate_summary_sheet(ws_village, data, by="village")
 
-    # 建立「以區分類」工作表
-    ws_district = wb.create_sheet(title="以區分類")
-    generate_summary_sheet(ws_district, data, by="district")
+    ws_village = wb.create_sheet(title="以里分類")
+    generate_summary_sheet(ws_village, gov_data, tp_data, by="village")
 
-    # 輸出檔案
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -184,35 +198,199 @@ def export_power_report():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
-def generate_summary_sheet(ws, data, by="village"):
-    """
-    ws: 工作表
-    data: power_data 陣列
-    by: 'village' 或 'district'
-    """
-    label_col = "里" if by == "village" else "行政區"
-    ws.append([label_col, "公所回報", "台電公司"])
+def generate_summary_sheet(ws, gov_data, tp_data, by="village"):
+    if by != "district":
+        label_col = "里"
+        ws.append([label_col, "公所回報", "台電公司"])
 
-    # 彙總
-    counter = defaultdict(int)
-    for row in data:
-        key = row.get(by)
-        counter[key] += row.get("count", 0)
+        counter = defaultdict(lambda: {"gov": 0, "tp": 0})
 
-    for label, gov_count in counter.items():
-        taipower = gov_count + random.randint(-2, 2)
-        ws.append([label, gov_count, taipower])
+        for row in gov_data:
+            key = row["village"]
+            counter[key]["gov"] += row.get("gov_count", 0)
 
-    # 建圖表
-    chart = BarChart()
-    chart.title = f"{label_col} 停電戶數對比"
-    chart.y_axis.title = "戶數"
-    chart.x_axis.title = label_col
+        for row in tp_data:
+            key = row["village"]
+            counter[key]["tp"] += row.get("tp_count", 0)
 
-    row_count = len(counter) + 1
-    data_ref = Reference(ws, min_col=2, max_col=3, min_row=1, max_row=row_count)
+        # 排序依照 max(gov, tp) 由大到小
+        all_rows = [{
+            "village": k,
+            "gov": v["gov"],
+            "tp": v["tp"]
+        } for k, v in counter.items()]
+        all_rows.sort(key=lambda x: max(x["gov"], x["tp"]), reverse=True)
+
+        for row in all_rows:
+            ws.append([row["village"], row["gov"], row["tp"]])
+
+        # 圖表
+        row_count = len(all_rows) + 1
+        data_ref = Reference(ws, min_col=2, max_col=3, min_row=1, max_row=row_count)
+        cats_ref = Reference(ws, min_col=1, min_row=2, max_row=row_count)
+        chart = BarChart()
+        chart.title = "里 停電戶數對比"
+        chart.y_axis.title = "戶數"
+        chart.x_axis.title = "里"
+        chart.add_data(data_ref, titles_from_data=True)
+        chart.set_categories(cats_ref)
+        chart.width = 28
+        chart.height = 15
+        ws.add_chart(chart, "F5")
+        return
+
+    # --- 以下為 district 模式 ---
+    ws.append(["行政區", "公所回報里", "公所戶數", "台電回報里", "台電戶數"])
+
+    gov_map = defaultdict(lambda: {"count": 0, "villages": set()})
+    tp_map = defaultdict(lambda: {"count": 0, "villages": set()})
+
+    for row in gov_data:
+        d = row["district"]
+        gov_map[d]["count"] += row.get("gov_count", 0)
+        gov_map[d]["villages"].add(row["village"])
+
+    for row in tp_data:
+        d = row["district"]
+        tp_map[d]["count"] += row.get("tp_count", 0)
+        tp_map[d]["villages"].add(row["village"])
+
+    all_districts = sorted(set(gov_map.keys()) | set(tp_map.keys()))
+
+    rows = []
+    for d in all_districts:
+        gov = gov_map[d]
+        tp = tp_map[d]
+
+        gov_count = gov["count"] if d in gov_map else 0
+        tp_count = tp["count"] if d in tp_map else 0
+        if gov_count == 0 and tp_count == 0:
+            continue
+
+        gov_villages = "、".join(sorted(gov["villages"])) if gov["villages"] else ""
+        tp_villages = "、".join(sorted(tp["villages"])) if tp["villages"] else ""
+
+        rows.append({
+            "district": d,
+            "gov_villages": gov_villages,
+            "gov_count": gov_count,
+            "tp_villages": tp_villages,
+            "tp_count": tp_count
+        })
+
+    # 排序
+    rows.sort(key=lambda r: max(r["gov_count"], r["tp_count"]), reverse=True)
+
+    for r in rows:
+        ws.append([
+            r["district"],
+            r["gov_villages"],
+            r["gov_count"],
+            r["tp_villages"],
+            r["tp_count"]
+        ])
+
+    # 加圖表（用戶數）
+    row_count = len(rows) + 1
+    data_ref = Reference(ws, min_col=3, max_col=5, min_row=1, max_row=row_count)
     cats_ref = Reference(ws, min_col=1, min_row=2, max_row=row_count)
+    chart = BarChart()
+    chart.title = "行政區 停電戶數對比"
+    chart.y_axis.title = "戶數"
+    chart.x_axis.title = "行政區"
     chart.add_data(data_ref, titles_from_data=True)
     chart.set_categories(cats_ref)
+    chart.width = 28
+    chart.height = 15
+    ws.add_chart(chart, "G5")
 
-    ws.add_chart(chart, "E5")
+@power_bp.route('/api/power_stats', methods=['GET'])
+@login_required
+def get_power_stats():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # 取得公所資料
+    if current_user.role_id == 4:
+        cursor.execute("""
+            SELECT po.*, d.name, v.name
+            FROM power_reports po
+            LEFT JOIN districts d ON po.district_id = d.id
+            LEFT JOIN villages v ON po.village_id = v.id
+            WHERE po.deleted_at IS NULL AND po.created_by = ?
+            ORDER BY po.created_at
+        """, (current_user.id,))
+    else:
+        cursor.execute("""
+            SELECT po.*, d.name, v.name
+            FROM power_reports po
+            LEFT JOIN districts d ON po.district_id = d.id
+            LEFT JOIN villages v ON po.village_id = v.id
+            WHERE po.deleted_at IS NULL
+            ORDER BY po.created_at
+        """)
+    gov_rows = cursor.fetchall()
+
+    gov_data = []
+    for row in gov_rows:
+        gov_data.append(dict(
+            district_id=row[1],
+            village_id=row[2],
+            district=row[-2],
+            village=row[-1],
+            gov_count=row[5]
+        ))
+
+    # 取得台電資料
+    cursor.execute("""
+        SELECT tr.district_id, tr.village_id, d.name, v.name, SUM(tr.count)
+        FROM taipower_reports tr
+        LEFT JOIN districts d ON tr.district_id = d.id
+        LEFT JOIN villages v ON tr.village_id = v.id
+        GROUP BY tr.district_id, tr.village_id
+    """)
+    tp_rows = cursor.fetchall()
+    tp_map = {(row[0], row[1]): {'district': row[2], 'village': row[3], 'tp_count': row[4]} for row in tp_rows}
+
+    # 合併 key
+    combined_map = {}
+    for row in gov_data:
+        key = (row['district_id'], row['village_id'])
+        combined_map[key] = {
+            'district_id': row['district_id'],
+            'village_id': row['village_id'],
+            'district': row['district'],
+            'village': row['village'],
+            'gov_count': row['gov_count'],
+            'tp_count': 0
+        }
+
+    for key, tp in tp_map.items():
+        if key not in combined_map:
+            combined_map[key] = {
+                'district_id': key[0],
+                'village_id': key[1],
+                'district': tp['district'],
+                'village': tp['village'],
+                'gov_count': 0,
+                'tp_count': tp['tp_count']
+            }
+        else:
+            combined_map[key]['tp_count'] = tp['tp_count']
+
+    conn.close()
+    return jsonify(list(combined_map.values()))
+
+@power_bp.route("/api/taipower_reports", methods=["POST"])
+@login_required
+def create_taipower_report():
+    data = request.get_json()
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO taipower_reports (district_id, village_id, count, created_by)
+        VALUES (?, ?, ?, ?)
+    """, (data["district_id"], data["village_id"], data["count"], current_user.id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
