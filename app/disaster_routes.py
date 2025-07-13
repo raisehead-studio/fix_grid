@@ -2,7 +2,6 @@ import os
 import sqlite3
 from flask import Blueprint, request, jsonify, render_template, send_file, current_app
 from werkzeug.utils import secure_filename
-# import pandas as pd
 from datetime import datetime
 
 disaster_bp = Blueprint('disaster', __name__)
@@ -54,19 +53,6 @@ def upload_excel(disaster_id):
 
     return jsonify(success=True)
 
-# @disaster_bp.route("/api/taiwater_disasters/<int:disaster_id>/data")
-# def read_excel_data(disaster_id):
-#     conn = sqlite3.connect("kao_power_water.db")
-#     cursor = conn.cursor()
-#     cursor.execute("SELECT file_path FROM taiwater_disasters WHERE id = ?", (disaster_id,))
-#     row = cursor.fetchone()
-#     conn.close()
-#     if not row or not row[0] or not os.path.exists(row[0]):
-#         return jsonify(data=[])
-
-#     df = pd.read_excel(row[0])
-#     return jsonify(data=df.to_dict(orient="records"))
-
 @disaster_bp.route("/api/taiwater_disasters/<int:disaster_id>/download")
 def download_excel(disaster_id):
     conn = sqlite3.connect("kao_power_water.db")
@@ -74,11 +60,23 @@ def download_excel(disaster_id):
     cursor.execute("SELECT file_path FROM taiwater_disasters WHERE id = ?", (disaster_id,))
     row = cursor.fetchone()
     conn.close()
-    if not row:
+
+    if not row or not row[0]:
         return "Not found", 404
 
-    print(row[0])
-    return send_file(row[0], as_attachment=True)
+    file_path = row[0]
+
+    if not os.path.exists(file_path):
+        return "File not found", 404
+
+    filename = os.path.basename(file_path)
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=filename
+    )
+
 
 @disaster_bp.route("/api/taiwater_disasters/example")
 def download_example():

@@ -4,5 +4,4 @@ flask-wtf
 wtforms
 werkzeug
 python-dotenv
-pandas
 openpyxl
