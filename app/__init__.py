@@ -1,11 +1,12 @@
+import re
 import sqlite3
 import os
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, redirect, request, url_for, flash
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from jinja2 import TemplateNotFound
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from .models import get_user_by_username, get_user_by_id_with_role, get_role_page_permissions_from_db
 from .utils import page_name_map
 
@@ -18,6 +19,38 @@ from .taiwater_power_routes import taiwater_power_bp
 from .disaster_routes import disaster_bp
 
 login_manager = LoginManager()
+
+def needs_password_update(password_updated_at, user_id):
+    # 沒有更新時間或超過 90 天
+    if not password_updated_at:
+        return True
+    try:
+        last_updated = datetime.fromisoformat(password_updated_at)
+        if datetime.now() - last_updated > timedelta(days=90):
+            return True
+    except Exception:
+        return True
+
+    # 沒有登入紀錄
+    conn = sqlite3.connect('kao_power_water.db')
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM user_login_logs WHERE user_id = ?", (user_id,))
+    count = c.fetchone()[0]
+    conn.close()
+    return count == 0
+
+def validate_password(pwd):
+    if len(pwd) < 12:
+        return False
+    if not re.search(r'[A-Z]', pwd):
+        return False
+    if not re.search(r'[a-z]', pwd):
+        return False
+    if not re.search(r'\d', pwd):
+        return False
+    if not re.search(r'[^A-Za-z0-9]', pwd):  # 特殊符號
+        return False
+    return True
 
 def create_app():
     app = Flask(__name__)
@@ -76,17 +109,63 @@ def create_app():
             if user and check_password_hash(user['password'], password):
                 ip = request.remote_addr
 
-                # 記錄登入紀錄
-                insert_login_log(user['id'], ip)
-
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
                     user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], user['password_updated_at'], ip=ip
                 ))
+
+                if needs_password_update(user['password_updated_at'], user['id']):
+                    print('change')
+                    return redirect(url_for('force_change_password'))
+
+                # 記錄登入紀錄
+                insert_login_log(user['id'], ip)
+
                 return redirect(url_for('page_info', page='profile'))
             else:
                 flash("帳號或密碼錯誤", "danger")
         return render_template('login.html')
+
+    @app.route('/force_change_password', methods=['GET', 'POST'])
+    @login_required
+    def force_change_password():
+        if request.method == 'POST':
+            ip = request.remote_addr
+            new_password = request.form['new_password']
+
+            # 取得原本的加密密碼
+            conn = sqlite3.connect('kao_power_water.db')
+            c = conn.cursor()
+            c.execute("SELECT password FROM users WHERE id = ?", (current_user.id,))
+            row = c.fetchone()
+            old_password_hash = row[0] if row else None
+
+            # 先檢查格式
+            if not validate_password(new_password):
+                flash("密碼格式不符：需至少12碼，包含大小寫英文字母、數字、特殊符號", "danger")
+                conn.close()
+                return render_template('force_change_password.html')
+
+            # 再檢查是否與舊密碼相同
+            if old_password_hash and check_password_hash(old_password_hash, new_password):
+                flash("新密碼不得與舊密碼相同", "danger")
+                conn.close()
+                return render_template('force_change_password.html')
+
+            hashed = generate_password_hash(new_password)
+            conn = sqlite3.connect('kao_power_water.db')
+            c = conn.cursor()
+            c.execute("UPDATE users SET password = ?, password_updated_at = ? WHERE id = ?", (hashed, datetime.now().isoformat(), current_user.id))
+            conn.commit()
+            conn.close()
+
+            insert_login_log(current_user.id, ip)
+
+            flash("密碼更新成功，請重新登入", "success")
+            logout_user()
+            return redirect(url_for('login'))
+
+        return render_template('force_change_password.html')
 
     @app.route('/dashboard')
     @login_required
