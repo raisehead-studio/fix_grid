@@ -3,7 +3,7 @@ import sqlite3
 import os
 
 from datetime import datetime, timedelta
-from flask import Flask, render_template, redirect, request, url_for, flash
+from flask import Flask, render_template, redirect, request, url_for, flash, abort
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from jinja2 import TemplateNotFound
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -64,6 +64,11 @@ def create_app():
     app.register_blueprint(water_bp)
     app.register_blueprint(taiwater_power_bp)
     app.register_blueprint(disaster_bp)
+
+    @app.before_request
+    def block_options():
+        if request.method == 'OPTIONS':
+            abort(403)
 
     class User(UserMixin):
         def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name, password_updated_at, ip=None):
