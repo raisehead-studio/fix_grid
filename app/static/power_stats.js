@@ -219,6 +219,104 @@ function renderChart(labels, data1, data2) {
   });
 }
 
+function exportToExcel() {
+  const govMap = new Map();
+  const tpMap = new Map();
+
+  power_data.forEach(row => {
+    const district = row.district;
+    const village = row.village;
+    const gov = row.gov_count || 0;
+    const tp = row.tp_count || 0;
+
+    if (gov > 0) {
+      if (!govMap.has(district)) {
+        govMap.set(district, { count: 0, villages: new Set() });
+      }
+      govMap.get(district).count += gov;
+      govMap.get(district).villages.add(village);
+    }
+
+    if (tp > 0) {
+      if (!tpMap.has(district)) {
+        tpMap.set(district, { count: 0, villages: new Set() });
+      }
+      tpMap.get(district).count += tp;
+      tpMap.get(district).villages.add(village);
+    }
+  });
+
+  const allDistricts = new Set([...govMap.keys(), ...tpMap.keys()]);
+  const rows = [];
+
+  allDistricts.forEach(district => {
+    const govData = govMap.get(district);
+    const tpData = tpMap.get(district);
+
+    const govCount = govData?.count || 0;
+    const tpCount = tpData?.count || 0;
+
+    const mergedVillagesSet = new Set([
+      ...(govData?.villages || []),
+      ...(tpData?.villages || [])
+    ]);
+    const mergedVillages = [...mergedVillagesSet].sort().join('、');
+
+    rows.push({
+      district,
+      mergedVillages,
+      govCount,
+      tpCount
+    });
+  });
+
+  // ✅ 排序邏輯：依左右表中較大者為準
+  rows.sort((a, b) => Math.max(b.govCount, b.tpCount) - Math.max(a.govCount, a.tpCount));
+
+  const dataRows = rows.map(row => [
+    row.district,
+    row.mergedVillages,
+    row.govCount,
+    row.tpCount
+  ]);
+
+  if (dataRows.length === 0) {
+    alert("目前沒有資料可以匯出！");
+    return;
+  }
+
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `(表五)停電彙整表(報告上級)_${timestamp}.xlsx`;
+
+  fetch("/api/export-excel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "sheet5.xlsx",
+      filename,
+      data: dataRows,
+      start_row: 5,
+      start_col: 2
+    })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.error); });
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert("匯出失敗：" + err.message);
+    });
+}
+
 function exportToExcelViaBackend() {
   fetch("/api/power_reports/export-power-report", {
     method: "POST",

@@ -37,7 +37,8 @@ def get_taiwater_power_reports():
         taipower_description=row[15],
         taipower_eta_hours=row[16],
         taipower_support=row[17],
-        created_at=row[8]
+        created_at=row[8],
+        location=row[18],
     ) for row in rows]
     conn.close()
     return jsonify(data)
@@ -49,8 +50,8 @@ def create_taiwater_power_report():
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO taiwater_power_reports (facility, pole_number, electricity_number, reason, contact_name, contact_phone, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO taiwater_power_reports (facility, pole_number, electricity_number, reason, contact_name, contact_phone, created_by, location)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data["facility"],
         data["pole_number"],
@@ -58,7 +59,8 @@ def create_taiwater_power_report():
         data["reason"],
         data["contact_name"],
         data["contact_phone"],
-        current_user.id
+        current_user.id,
+        data["location"],
     ))
     conn.commit()
     conn.close()

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS taiwater_power_reports (
     taipower_note TEXT,
     taipower_eta_hours INTEGER,
     taipower_support TEXT,
+    location TEXT NOT NULL DEFAULT '',
 
     FOREIGN KEY (created_by) REFERENCES users(id)
 );

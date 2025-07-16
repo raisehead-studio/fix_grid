@@ -80,5 +80,5 @@ def download_excel(disaster_id):
 
 @disaster_bp.route("/api/taiwater_disasters/example")
 def download_example():
-    file_path = os.path.join(current_app.root_path, "static", "example.xlsx")
+    file_path = os.path.join(current_app.root_path, "static", "sheet7.xlsx")
     return send_file(file_path, as_attachment=True)

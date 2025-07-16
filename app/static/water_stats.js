@@ -106,31 +106,52 @@ function exportToExcel() {
     return;
   }
 
-  const rows = [[
-    "序號", "行政區", "里", "地點", "需加水站", "已設加水站", "預估修復時間"
-  ]];
+  const dataRows = filteredReports.map(entry => {
+    const eta = entry.taiwater_eta_hours;
+    const isOver24h = eta != null && eta > 24;
 
-  filteredReports.forEach(entry => {
-    rows.push([
+    return [
       entry.id,
       entry.district,
       entry.village,
       entry.location,
       entry.water_station === '是' ? '是' : '否',
       entry.taiwater_water_station_status === '是' ? '是' : '否',
-      entry.taiwater_eta_hours != null ? `${entry.taiwater_eta_hours} 小時` : '-'
-    ]);
+      eta != null ? `${eta} 小時` : '',
+      eta != null ? (isOver24h ? '是' : '否') : ''
+    ];
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "停水彙整");
-
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0]; // e.g. 2025-06-29-18-22-10
-  const filename = `停水彙整_${timestamp}.xlsx`;
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `(表六)停水彙整表(報告上級)_${timestamp}.xlsx`;
 
-  XLSX.writeFile(wb, filename);
+  fetch("/api/export-excel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "sheet6.xlsx",
+      filename,
+      data: dataRows,
+      start_row: 5,   // A5 = 第五列
+      start_col: 1    // A = 第 1 欄
+    })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.error); });
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert("匯出失敗：" + err.message);
+    });
 }
 
 window.onload = async () => {

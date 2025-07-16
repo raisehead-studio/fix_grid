@@ -3,12 +3,14 @@ import sqlite3
 import os
 
 from datetime import datetime, timedelta
-from flask import Flask, render_template, redirect, request, url_for, flash, abort
+from flask import Flask, render_template, redirect, request, url_for, flash, abort, send_file, jsonify, current_app
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from jinja2 import TemplateNotFound
 from werkzeug.security import check_password_hash, generate_password_hash
 from .models import get_user_by_username, get_user_by_id_with_role, get_role_page_permissions_from_db
 from .utils import page_name_map
+from io import BytesIO
+from openpyxl import load_workbook
 
 # routes
 from .role_routes import role_bp
@@ -247,6 +249,57 @@ def create_app():
             return render_template(target_template, **context)
         except TemplateNotFound:
             return render_template("page_info.html", **context)
+
+    @app.route("/api/export-excel", methods=["POST"])
+    def export_excel():
+        try:
+            payload = request.get_json()
+            template_name = payload.get("template")
+            filename = payload.get("filename")
+            data = payload.get("data")
+            start_row = payload.get("start_row", 1)
+            start_col = payload.get("start_col", 1)
+
+            if not template_name or not filename or not isinstance(data, list):
+                return jsonify({"error": "Missing or invalid parameters"}), 400
+
+            template_path = os.path.join(current_app.root_path, "static", template_name)
+            if not os.path.exists(template_path):
+                return jsonify({"error": f"Template file '{template_name}' not found"}), 404
+
+            wb = load_workbook(template_path)
+            ws = wb.active
+
+            for row_idx, row_data in enumerate(data):
+                for col_idx, value in enumerate(row_data):
+                    ws.cell(row=start_row + row_idx, column=start_col + col_idx, value=value)
+
+            # 民國時間格式產出
+            now = datetime.now()
+            roc_year = now.year - 1911
+            time_string = f"統計時間：{roc_year}年{now.month}月{now.day}日（{now.hour}:{now.minute:02}）"
+
+            # 根據範本名稱設定對應欄位
+            if template_name == "sheet4.xlsx":
+                ws["I1"] = time_string
+            elif template_name == "sheet5.xlsx":
+                ws["E1"] = time_string
+            elif template_name == "sheet6.xlsx":
+                ws["H1"] = time_string
+
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+
+            return send_file(
+                output,
+                download_name=filename,
+                as_attachment=True,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     @app.before_request
     def attach_ip_to_current_user():

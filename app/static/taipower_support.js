@@ -65,6 +65,7 @@ async function fetchReports() {
   taipowerBody.innerHTML = '';
 
   data.forEach((entry, index) => {
+    if (entry.taipower_status === 1) return;
     power_data[entry.id] = entry
     // 左表格：回報
     const reportRow = document.createElement('tr');
@@ -107,39 +108,61 @@ async function fetchReports() {
 }
 
 function exportToExcel() {
-  const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
-  const filename = `台電支援需求彙整表_${timestamp}.xlsx`;
+  const exportData = filteredReports.filter(e => e.taipower_status !== 1);
+  if (exportData.length === 0) {
+    alert("目前沒有可匯出的資料！");
+    return;
+  }
 
-  const rows = [[
-    // 左表（公所通報）
-    "序號", "行政區", "里", "地點", "停電原因", "停電戶數", "聯絡人", "電話", "通報時間",
-    // 右表（台電回報）
-    "回報說明", "預估修復時間", "支援內容", "更新時間"
-  ]];
+  const dataRows = exportData.map(e => {
+    const eta = e.taipower_eta_hours;
+    const isOver24h = eta != null && eta > 24;
 
-  filteredReports.forEach(entry => {
-    rows.push([
-      entry.id,
-      entry.district,
-      entry.village,
-      entry.location,
-      entry.reason,
-      entry.count,
-      entry.contact,
-      entry.phone,
-      entry.created_at,
-      entry.taipower_description || "-",
-      entry.taipower_eta_hours != null ? `${entry.taipower_eta_hours} 小時` : "-",
-      entry.taipower_support || "-",
-      entry.taipower_restored_at || "-"
-    ]);
+    return [
+      e.district,
+      e.village,
+      e.location,
+      e.count,
+      e.reason,
+      e.contact,
+      e.phone,
+      e.created_at,
+      e.taipower_description || "",
+      e.taipower_support || "",
+      eta != null ? (isOver24h ? "是" : "否") : ""
+    ];
   });
 
-  const wb = XLSX.utils.book_new();
-  const sheet = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, sheet, "台電支援需求");
-  XLSX.writeFile(wb, filename);
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `(表四)台電支援需求彙整表_${timestamp}.xlsx`;
+
+  fetch("/api/export-excel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "sheet4.xlsx",
+      filename,
+      data: dataRows,
+      start_row: 5,
+      start_col: 2
+    })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.error); });
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert("匯出失敗：" + err.message);
+    });
 }
 
 window.onload = async () => {

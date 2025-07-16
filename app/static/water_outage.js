@@ -281,19 +281,11 @@ function exportToExcel() {
     return;
   }
 
-  const includeTaiwater = canViewStatus;
+  const dataRows = filteredReports.map(e => {
+    const eta = e.taiwater_eta_hours;
+    const isOver24h = eta != null && eta > 24;
 
-  const rows = [[
-    "序號", "行政區", "里", "地點", "需加水站", "聯絡人", "電話", "通報時間", "備註", "狀態"
-  ]];
-
-  if (includeTaiwater) {
-    rows[0].push("台水狀態", "說明", "預估修復時間", "加水站", "支援內容", "更新時間");
-  }
-
-  filteredReports.forEach(e => {
-    const row = [
-      e.id,
+    return [
       e.district,
       e.village,
       e.location,
@@ -301,33 +293,45 @@ function exportToExcel() {
       e.contact,
       e.phone,
       e.created_at,
-      e.remarks || '-',
-      e.report_status ? '已復水' : '未復水'
+      e.report_status ? '是' : '否',
+      canViewStatus ? (e.taiwater_status ? '已復水' : '搶修中') : '',
+      canViewStatus ? (e.taiwater_description || '') : '',
+      canViewStatus ? (e.taiwater_water_station_status === '是' ? '已新增' : '未新增') : '',
+      canViewStatus ? (eta != null ? `${eta} 小時` : '') : '',
+      canViewStatus ? (eta != null ? (isOver24h ? '是' : '否') : '') : ''
     ];
-
-    if (includeTaiwater) {
-      row.push(
-        e.taiwater_status ? '已復水' : '未復水',
-        e.taiwater_description || '-',
-        e.taiwater_eta_hours != null ? `${e.taiwater_eta_hours} 小時` : '-',
-        e.taiwater_water_station_status === '是' ? '已新增' : '未新增',
-        e.taiwater_support || '-',
-        e.taiwater_restored_at || '-'
-      );
-    }
-
-    rows.push(row);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "停水彙整");
-
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];  // 2025-06-29-18-00-00
-  const filename = `停水彙整_${timestamp}.xlsx`;
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `(表二)停水彙整表_${timestamp}.xlsx`;
 
-  XLSX.writeFile(wb, filename);
+  fetch("/api/export-excel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "sheet2.xlsx",
+      filename,
+      data: dataRows,
+      start_row: 6,   // 從第 6 列開始
+      start_col: 2    // 從 B 欄開始
+    })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.error); });
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert("匯出失敗：" + err.message);
+    });
 }
 
 // Modals

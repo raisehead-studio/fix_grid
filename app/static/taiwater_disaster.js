@@ -37,7 +37,7 @@ function loadExcelData(disasterId) {
         const data = new Uint8Array(evt.target.result);
         const workbook = XLSX.read(data, { type: "array" });
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet);
+        const json = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 4 });
         renderExcelData(json);
       };
       reader.readAsArrayBuffer(blob);
@@ -115,7 +115,7 @@ function openUploadModal() {
           const data = new Uint8Array(evt.target.result);
           const workbook = XLSX.read(data, { type: "array" });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet);
+          const json = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 4 });
 
           if (json.length > 0 && !overwriteConfirmed) {
             document.getElementById("confirm-overwrite-modal").classList.remove("hidden");
@@ -157,7 +157,7 @@ function submitExcelUpload(e) {
     const data = new Uint8Array(evt.target.result);
     const workbook = XLSX.read(data, { type: "array" });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(sheet);
+    const json = XLSX.utils.sheet_to_json(sheet, { header: 1, range: 4 });
 
     // 顯示在畫面上
     renderExcelData(json);
@@ -194,22 +194,19 @@ function downloadExampleExcel() {
 function renderExcelData(jsonData) {
   const tbody = document.querySelector("#excel-table tbody");
   tbody.innerHTML = "";
+
   jsonData.forEach((row, i) => {
     const tr = document.createElement("tr");
     tr.className = "border-t border-b";
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${row["行政區"] || ""}</td>
-      <td>${row["里"] || ""}</td>
-      <td>${row["目前停水戶數"] || ""}</td>
-      <td>${row["已復水戶數"] || ""}</td>
-      <td>${row["累積停水戶數"] || ""}</td>
-      <td>${row["目前降壓戶數"] || ""}</td>
-      <td>${row["已降壓戶數"] || ""}</td>
-      <td>${row["累積降壓戶數"] || ""}</td>
-      <td>${row["目前停水影響戶數"] || ""}</td>
-      <td>${row["預計復水時間"] || ""}</td>
-    `;
+
+    let rowHtml = '';
+
+    // 依序加入每欄
+    row.forEach(cell => {
+      rowHtml += `<td>${cell || ""}</td>`;
+    });
+
+    tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
 }

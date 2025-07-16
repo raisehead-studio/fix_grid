@@ -132,6 +132,7 @@ async function fetchReports() {
     reportRow.innerHTML = `
       <td>${entry.id}</td>
       <td>${entry.facility}</td>
+      <td>${entry.location}</td>
       <td>${entry.pole_number}</td>
       <td>${entry.electricity_number}</td>
       <td>${entry.reason}</td>
@@ -211,51 +212,58 @@ function exportToExcel() {
     return;
   }
 
-  const includeTaipower = canViewStatus;
+  const dataRows = filteredReports.map(e => {
+    const eta = e.taipower_eta_hours;
+    const isOver24h = eta != null && eta > 24;
 
-  const rows = [[
-    "序號", "設施名稱", "桿號", "電號", "停電原因", "聯絡人", "電話", "通報時間", "狀態"
-  ]];
-
-  if (includeTaipower) {
-    rows[0].push("台電狀態", "說明", "預估修復時間", "支援內容", "更新時間");
-  }
-
-  filteredReports.forEach(e => {
-    const row = [
-      e.id,
+    return [
       e.facility,
+      e.location,
       e.pole_number,
       e.electricity_number,
       e.reason,
       e.contact,
       e.phone,
       e.created_at,
-      e.report_status ? '已復電' : '未復電'
+      e.report_status ? "是" : "否",
+      canViewStatus ? (e.taipower_status ? "已復電" : "搶修中") : "",
+      canViewStatus ? (e.taipower_description || "") : "",
+      canViewStatus ? (eta != null ? `${eta} 小時` : "") : "",
+      canViewStatus ? (eta != null ? (isOver24h ? "是" : "否") : "") : "",
+      canViewStatus ? (e.taipower_support || "") : ""
     ];
-
-    if (includeTaipower) {
-      row.push(
-        e.taipower_status ? '已復電' : '未復電',
-        e.taipower_description || '-',
-        e.taipower_eta_hours != null ? `${e.taipower_eta_hours} 小時` : '-',
-        e.taipower_support || '-',
-        e.taipower_restored_at || '-'
-      );
-    }
-
-    rows.push(row);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "台水停電通報");
-
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0]; // 例如 2025-06-29-15-00-00
-  const filename = `台水停電通報_${timestamp}.xlsx`;
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `(表三)水公司停電彙整表_${timestamp}.xlsx`;
 
-  XLSX.writeFile(wb, filename);
+  fetch("/api/export-excel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "sheet3.xlsx",
+      filename,
+      data: dataRows,
+      start_row: 5,   // 從第 5 列開始
+      start_col: 2    // 從 B 欄開始
+    })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.error); });
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert("匯出失敗：" + err.message);
+    });
 }
 
 // Modals
@@ -267,6 +275,7 @@ function openEditReport(entry_id) {
   entry = power_data[entry_id]
   currentEditingReportId = entry.id;
   document.getElementById('edit-facility').value = entry.facility || '';
+  document.getElementById('edit-location').value = entry.location || '';
   document.getElementById('edit-pole-number').value = entry.pole_number || '';
   document.getElementById('edit-electricity-number').value = entry.electricity_number || '';
   document.getElementById('edit-reason').value = entry.reason || '';
@@ -278,6 +287,7 @@ function openEditReport(entry_id) {
 function submitEditReport() {
   const payload = {
     facility: document.getElementById('edit-facility').value,
+    location: document.getElementById('edit-location').value,
     pole_number: document.getElementById('edit-pole-number').value,
     electricity_number: document.getElementById('edit-electricity-number').value,
     reason: document.getElementById('edit-reason').value,
@@ -438,7 +448,7 @@ function updateSortIndicators() {
   const fields = [
     'id', 'district', 'village', 'location', 'reason', 'count', 'contact', 'phone', 'created_at', 'report_status',
     'taipower_status', 'taipower_description', 'taipower_eta_hours', 'taipower_support', 'taipower_restored_at',
-    'electricity_number', 'pole_number', 'facility',
+    'electricity_number', 'pole_number', 'facility', 'location',
   ];
   fields.forEach(f => {
     const el = document.getElementById(`sort-indicator-${f}`);

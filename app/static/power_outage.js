@@ -279,52 +279,60 @@ function exportToExcel() {
     return;
   }
 
-  const includeTaipower = canViewStatus;
-  const rows = [[
-    "序號", "行政區", "里", "地點", "停電原因", "停電戶數",
-    "聯絡人", "電話", "通報時間", "狀態"
-  ]];
+  const dataRows = filteredReports.map(e => {
+    const eta = e.taipower_eta_hours;
+    const isOver24h = eta != null && eta > 24;
 
-  if (includeTaipower) {
-    rows[0].push("台電狀態", "台電說明", "預估修復時間", "支援內容", "台電更新時間");
-  }
-
-  filteredReports.forEach(e => {
-    const row = [
-      e.id,
+    return [
       e.district,
       e.village,
       e.location,
-      e.reason,
       e.count,
+      e.reason,
       e.contact,
       e.phone,
       e.created_at,
-      e.report_status ? "已復電" : "未復電"
+      e.report_status ? "是" : "否",
+      canViewStatus && e.taipower_status != null
+        ? (e.taipower_status ? "已復電" : "搶修中")
+        : "",
+      canViewStatus ? (e.taipower_description || "") : "",
+      canViewStatus ? (eta != null ? `${eta} 小時` : "") : "",
+      canViewStatus ? (eta != null ? (isOver24h ? "是" : "否") : "") : "",
+      canViewStatus ? (e.taipower_support || "") : ""
     ];
-
-    if (includeTaipower) {
-      row.push(
-        e.taipower_status ? "已復電" : "未復電",
-        e.taipower_description || "-",
-        e.taipower_eta_hours != null ? `${e.taipower_eta_hours} 小時` : "-",
-        e.taipower_support || "-",
-        e.taipower_restored_at || "-"
-      );
-    }
-
-    rows.push(row);
   });
 
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "停電彙整");
-
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];  // yyyy-mm-dd-HH-MM-SS
-  const filename = `停電彙整_${timestamp}.xlsx`;
+  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const filename = `(表一)民政局停電彙整表_${timestamp}.xlsx`;
 
-  XLSX.writeFile(wb, filename);
+  fetch("/api/export-excel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "sheet1.xlsx",
+      filename,
+      data: dataRows,
+      start_row: 5,   // Excel 的第 5 列
+      start_col: 2    // Excel 的 B 欄
+    })
+  })
+    .then(res => {
+      if (!res.ok) return res.json().then(err => { throw new Error(err.error); });
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => {
+      alert("匯出失敗：" + err.message);
+    });
 }
 
 // Modals

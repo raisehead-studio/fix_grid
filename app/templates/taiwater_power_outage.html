@@ -64,6 +64,9 @@
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('facility')">
               設施名稱 <span id="sort-indicator-facility"></span>
             </th>
+            <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('location')">
+              地點 <span id="sort-indicator-location"></span>
+            </th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('pole_number')">
               桿號 <span id="sort-indicator-pole_number"></span>
             </th>
@@ -139,6 +142,10 @@
             <input id="facility" name="facility" type="text" class="w-full border px-2 py-1 rounded" required>
           </div>
           <div>
+            <label class="block">地點</label>
+            <input id="location" name="location" type="text" class="w-full border px-2 py-1 rounded" required>
+          </div>
+          <div>
             <label class="block">桿號</label>
             <input id="pole_number" name="pole_number" type="text" class="w-full border px-2 py-1 rounded" required>
           </div>
@@ -176,6 +183,10 @@
         <div>
           <label for="edit-facility" class="block">設施名稱</label>
           <input id="edit-facility" class="w-full border p-2" />
+        </div>
+        <div>
+          <label for="edit-location" class="block">地點</label>
+          <input id="edit-location" class="w-full border p-2" />
         </div>
         <div>
           <label for="edit-pole-number" class="block">桿號</label>
