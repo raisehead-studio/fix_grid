@@ -1,4 +1,4 @@
--- DROP TABLE IF EXISTS power_reports;
+DROP TABLE IF EXISTS power_reports;
 CREATE TABLE IF NOT EXISTS power_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     district_id INTEGER NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS power_reports (
     report_status BOOLEAN DEFAULT 0,
     report_restored_at DATETIME,
 
-    taipower_status BOOLEAN DEFAULT 0,
+    taipower_status BOOLEAN DEFAULT NULL,
     taipower_restored_at DATETIME,
     taipower_note TEXT,
     taipower_eta_hours INTEGER,

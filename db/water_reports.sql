@@ -1,4 +1,4 @@
--- DROP TABLE IF EXISTS water_reports;
+DROP TABLE IF EXISTS water_reports;
 CREATE TABLE IF NOT EXISTS water_reports (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     district_id INTEGER NOT NULL,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS water_reports (
     report_status BOOLEAN DEFAULT 0,
     report_restored_at DATETIME,
 
-    taiwater_status BOOLEAN DEFAULT 0,
+    taiwater_status BOOLEAN DEFAULT NULL,
     taiwater_restored_at DATETIME,
     taiwater_note TEXT,
     taiwater_eta_hours INTEGER,

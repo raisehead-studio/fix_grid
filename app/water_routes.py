@@ -137,13 +137,26 @@ def update_taiwater_status(id):
 @water_bp.route('/api/water_reports/<int:id>/toggle_taiwater_status', methods=['POST'])
 @login_required
 def toggle_taiwater_status(id):
+    data = request.get_json()
+    if not data or 'taiwater_status' not in data:
+        return jsonify({"error": "Missing taiwater_status"}), 400
+
+    try:
+        status = int(data['taiwater_status'])
+        if status not in (0, 1):
+            raise ValueError
+    except ValueError:
+        return jsonify({"error": "Invalid taiwater_status, must be 0 or 1"}), 400
+
     conn = sqlite3.connect("kao_power_water.db")
     cursor = conn.cursor()
+
     cursor.execute("""
         UPDATE water_reports
-        SET taiwater_status = 1, taiwater_restored_at = current_timestamp
-        WHERE id = ? AND taiwater_status = 0
-    """, (id,))
+        SET taiwater_status = ?, taiwater_restored_at = current_timestamp
+        WHERE id = ?
+    """, (status, id))
+
     conn.commit()
     conn.close()
-    return jsonify({"status": "restored"})
+    return jsonify({"status": "ok", "taiwater_status": status})

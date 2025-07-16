@@ -120,7 +120,8 @@ async function fetchReports() {
   let hideTaipowerEdit = data.every(e => e.taiwater_status);
 
   // 控制 <th> 顯示與否
-  document.getElementById('th-edit-report').style.display = hideReportEdit ? 'none' : '';
+  const canEditReport = userPermissions.includes("edit_report");
+  document.getElementById('th-edit-report').style.display = (hideReportEdit || !canEditReport) ? 'none' : '';
   if (userPermissions.includes("view_status")) {
     document.getElementById('th-edit-taiwater').style.display = hideTaipowerEdit ? 'none' : '';
   }
@@ -140,7 +141,15 @@ async function fetchReports() {
   if (canViewStatus) {
     const mismatchOnly = document.getElementById('filterMismatch').checked;
     if (mismatchOnly) {
-      data = data.filter(e => e.report_status !== e.taiwater_status);
+      data = data.filter(e => {
+        const r = e.report_status;
+        const t = e.taiwater_status;
+
+        const bothOne = r == 1 && t == 1;
+        const bothNotOne = r != 1 && t != 1;
+
+        return !(bothOne || bothNotOne);  // 不是一致 → 是不一致
+      });
     }
   }
 
@@ -211,7 +220,7 @@ async function fetchReports() {
     `;
     reportBody.appendChild(reportRow);
 
-    // 右表格：台電狀態
+    // 右表格：台水狀態
     if (canViewStatus) {
       const canEditStatus = userPermissions.includes("edit_status");
       const taiwaterBody = document.getElementById('taiwater-table-body');
@@ -219,11 +228,21 @@ async function fetchReports() {
       statusRow.className = "border-b";
       statusRow.innerHTML = `
         <td>
-          ${entry.taiwater_status 
-            ? '<span class="text-green-600 whitespace-nowrap">已復水</span>' 
-            : (canEditStatus 
-                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline whitespace-nowrap">未復水</button>` 
-                : '<span class="text-red-600 whitespace-nowrap">未復水</span>')}
+          ${
+            entry.taiwater_status === 1
+              ? '<span class="text-green-600 whitespace-nowrap">已復水</span>'
+              : canEditStatus
+                ? `<button onclick="confirmStatusRestore(${entry.id})" class="${
+                    entry.taiwater_status === 0 ? 'text-yellow-600' : 'text-gray-600'
+                  } underline whitespace-nowrap">${
+                    entry.taiwater_status === 0 ? '搶修中' : '✏️'
+                  }</button>`
+                : `<span class="${
+                    entry.taiwater_status === 0 ? 'text-yellow-600' : 'text-gray-600'
+                  } whitespace-nowrap">${
+                    entry.taiwater_status === 0 ? '搶修中' : '尚無狀態'
+                  }</span>`
+          }
         </td>
         <td>
           <div class="whitespace-pre-line overflow-x-auto overflow-y-auto max-h-[6em] max-w-[10em]">${entry.taiwater_description || '-'}</div>
@@ -392,18 +411,34 @@ function submitReportRestore() {
 }
 
 function confirmStatusRestore(entry_id) {
-  entry = water_data[entry_id]
+  const entry = water_data[entry_id];
   currentEditingStatusId = entry.id;
-  document.getElementById('confirmStatusText').innerHTML = `
-  ⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 供水狀態？<br><br>
-  此操作將立即生效，確認後將無法修改或復原。<br>
-  請再次確認設定是否正確。`;
+
+  let nextStatus, message;
+
+  if (entry.taiwater_status === null) {
+    nextStatus = 0;
+    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 為搶修狀態？<br><br>`;
+  } else if (entry.taiwater_status === 0) {
+    nextStatus = 1;
+    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 為已復水？<br><br>`;
+  } else {
+    return; // 1 = 已復水，不可再次變更
+  }
+
+  document.getElementById('confirmStatusText').innerHTML = message;
+  document.getElementById('confirmStatusRestoreModal').dataset.nextStatus = nextStatus;
   document.getElementById('confirmStatusRestoreModal').classList.remove('hidden');
 }
 
 function submitStatusRestore() {
+  const modal = document.getElementById('confirmStatusRestoreModal');
+  const nextStatus = parseInt(modal.dataset.nextStatus);
+
   fetch(`/api/water_reports/${currentEditingStatusId}/toggle_taiwater_status`, {
-    method: 'POST'
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taiwater_status: nextStatus })
   }).then(() => {
     closeConfirmStatusRestore();
     fetchReports();

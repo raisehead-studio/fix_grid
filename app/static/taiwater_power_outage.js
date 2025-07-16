@@ -78,7 +78,8 @@ async function fetchReports() {
   let hideTaipowerEdit = data.every(e => e.taipower_status);
 
   // 控制 <th> 顯示與否
-  document.getElementById('th-edit-report').style.display = hideReportEdit ? 'none' : '';
+  const canEditReport = userPermissions.includes("edit_report");
+  document.getElementById('th-edit-report').style.display = (hideReportEdit || !canEditReport) ? 'none' : '';
   if (userPermissions.includes("view_status")) {
     document.getElementById('th-edit-taipower').style.display = hideTaipowerEdit ? 'none' : '';
   }
@@ -87,7 +88,15 @@ async function fetchReports() {
   if (canViewStatus) {
     const mismatchOnly = document.getElementById('filterMismatch').checked;
     if (mismatchOnly) {
-      data = data.filter(e => e.report_status !== e.taipower_status);
+      data = data.filter(e => {
+        const r = e.report_status;
+        const t = e.taipower_status;
+
+        const bothOne = r == 1 && t == 1;
+        const bothNotOne = r != 1 && t != 1;
+
+        return !(bothOne || bothNotOne);  // 不是一致 → 是不一致
+      });
     }
   }
 
@@ -151,11 +160,21 @@ async function fetchReports() {
       statusRow.className = "border-b";
       statusRow.innerHTML = `
         <td>
-          ${entry.taipower_status 
-            ? '<span class="text-green-600 whitespace-nowrap">已復電</span>' 
-            : (canEditStatus 
-                ? `<button onclick="confirmStatusRestore(${entry.id})" class="text-red-600 underline whitespace-nowrap">未復電</button>` 
-                : '<span class="text-red-600 whitespace-nowrap">未復電</span>')}
+          ${
+            entry.taipower_status === 1
+              ? '<span class="text-green-600 whitespace-nowrap">已復電</span>'
+              : canEditStatus
+                ? `<button onclick="confirmStatusRestore(${entry.id})" class="${
+                    entry.taipower_status === 0 ? 'text-yellow-600' : 'text-gray-600'
+                  } underline whitespace-nowrap">${
+                    entry.taipower_status === 0 ? '搶修中' : '✏️'
+                  }</button>`
+                : `<span class="${
+                    entry.taipower_status === 0 ? 'text-yellow-600' : 'text-gray-600'
+                  } whitespace-nowrap">${
+                    entry.taipower_status === 0 ? '搶修中' : '尚無狀態'
+                  }</span>`
+          }
         </td>
         <td>
           <div class="whitespace-pre-line overflow-x-auto overflow-y-auto max-h-[6em] max-w-[10em]">${entry.taipower_description || '-'}</div>
@@ -320,18 +339,34 @@ function submitReportRestore() {
 }
 
 function confirmStatusRestore(entry_id) {
-  entry = power_data[entry_id]
+  const entry = power_data[entry_id];
   currentEditingStatusId = entry.id;
-  document.getElementById('confirmStatusText').innerHTML = `
-  ⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 供電狀態？<br><br>
-  此操作將立即生效，確認後將無法修改或復原。<br>
-  請再次確認設定是否正確。`;
+
+  let nextStatus, message;
+
+  if (entry.taipower_status === null) {
+    nextStatus = 0;
+    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.facility}</strong> 為搶修狀態？<br><br>`;
+  } else if (entry.taipower_status === 0) {
+    nextStatus = 1;
+    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.facility}</strong> 為已復電？<br><br>`;
+  } else {
+    return;
+  }
+
+  document.getElementById('confirmStatusText').innerHTML = message;
+  document.getElementById('confirmStatusRestoreModal').dataset.nextStatus = nextStatus;
   document.getElementById('confirmStatusRestoreModal').classList.remove('hidden');
 }
 
 function submitStatusRestore() {
+  const modal = document.getElementById('confirmStatusRestoreModal');
+  const nextStatus = parseInt(modal.dataset.nextStatus);
+
   fetch(`/api/taiwater_power_reports/${currentEditingStatusId}/toggle_taipower_status`, {
-    method: 'POST'
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ taipower_status: nextStatus })
   }).then(() => {
     closeConfirmStatusRestore();
     fetchReports();
