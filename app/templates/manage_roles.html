@@ -8,6 +8,18 @@
     let originalPermissions = {};
     let currentRoleId = null;
 
+    const permissionNameMap = {
+      "view": "頁面",
+      "create_report": "回報",
+      "edit_report": "編輯回報",
+      "view_status": "查看填報",
+      "edit_status": "編輯填報",
+      "edit": "編輯",
+      "excel": "匯出 Excel"
+    };
+
+    const pageNameMap = {{ page_name_map | tojson }};
+
     document.addEventListener("DOMContentLoaded", async function () {
       const res = await fetch('/api/role_permissions/roles');
       const roles = await res.json();
@@ -48,10 +60,14 @@
             const isChecked = originalPermissions.has(p.id);
             const item = document.createElement('div');
             const inputId = `perm_${roleId}_${p.id}`;
+
+            const pageName = pageNameMap[p.page] || p.page;
+            const permissionName = permissionNameMap[p.permission] || p.permission;
+
             item.className = "flex items-center mb-2";
             item.innerHTML = `
               <input type="checkbox" id="${inputId}" class="mr-2 permission-checkbox" data-id="${p.id}" ${isChecked ? 'checked' : ''}>
-              <label for="${inputId}" class="cursor-pointer">${p.page} - ${p.permission}</label>
+              <label for="${inputId}" class="cursor-pointer">${pageName} - ${permissionName}</label>
             `;
             permissionsDiv.appendChild(item);
           });

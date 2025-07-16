@@ -90,14 +90,8 @@ cursor.executemany("INSERT INTO roles (name) VALUES (?)", [(r,) for r in roles])
 
 permissions = [
     ('manage_accounts', 'view'),
-    ('manage_accounts', 'create'),
-    ('manage_accounts', 'edit'),
     ('manage_roles', 'view'),
-    ('manage_roles', 'create'),
-    ('manage_roles', 'edit'),
     ('profile', 'view'),
-    ('profile', 'edit'),
-    ('profile', 'change_password'),
     ('power_outage', 'view'),
     ('power_outage', 'create_report'),
     ('power_outage', 'edit_report'),
