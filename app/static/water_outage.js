@@ -201,7 +201,7 @@ async function fetchReports() {
       <td>${entry.water_station === '是' ? '是' : '否'}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td class="whitespace-nowrap">${entry.created_at}</td>
+      <td class="whitespace-nowrap">${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
       <td>
         <div class="whitespace-pre-line overflow-x-auto overflow-y-auto max-h-[6em] max-w-[10em]">${entry.remarks || '-'}</div>
       </td>
@@ -256,7 +256,7 @@ async function fetchReports() {
         }</td>
         <td>${entry.taiwater_water_station_status === '是' ? '已新增' : '未新增'}</td>
         <td>${entry.taiwater_support || '-'}</td>
-        <td class="whitespace-nowrap">${entry.taiwater_restored_at ? entry.taiwater_restored_at : '-'}</td>
+        <td class="whitespace-nowrap">${entry.taiwater_restored_at ? new Date(entry.taiwater_restored_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }) : '-'}</td>
         <td class="text-center">
           ${!entry.taiwater_status && canEditStatus 
             ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 

@@ -201,7 +201,7 @@ async function fetchReports() {
       <td>${entry.count}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td class="whitespace-nowrap">${entry.created_at}</td>
+      <td class="whitespace-nowrap">${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
       <td>
         ${entry.report_status 
           ? '<span class="text-green-600 whitespace-nowrap">已復電</span>' 
@@ -254,7 +254,7 @@ async function fetchReports() {
             : '-'
         }</td>
         <td>${entry.taipower_support || '-'}</td>
-        <td class="whitespace-nowrap">${entry.taipower_restored_at ? entry.taipower_restored_at : '-'}</td>
+        <td class="whitespace-nowrap">${entry.taipower_restored_at ? new Date(entry.taipower_restored_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }) : '-'}</td>
         <td class="text-center">
           ${!entry.taipower_status && canEditStatus 
             ? `<button onclick="openEditStatus(${entry.id})" class="text-blue-600">✏️</button>` 

@@ -79,7 +79,7 @@ async function fetchReports() {
       <td>${entry.count}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td>${entry.created_at}</td>
+      <td>${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
     `;
     reportBody.appendChild(reportRow);
 
