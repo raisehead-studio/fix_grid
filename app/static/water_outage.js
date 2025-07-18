@@ -422,10 +422,10 @@ function confirmStatusRestore(entry_id) {
 
   if (entry.taiwater_status === null) {
     nextStatus = 0;
-    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 為搶修狀態？<br><br>`;
+    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 為<span class='text-red-600 font-bold text-lg'>搶修中</span>狀態？<br><br>`;
   } else if (entry.taiwater_status === 0) {
     nextStatus = 1;
-    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 為已復水？<br><br>`;
+    message = `⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 為<span class='text-red-600 font-bold text-lg'>已復水</span>？<br><br>`;
   } else {
     return; // 1 = 已復水，不可再次變更
   }
