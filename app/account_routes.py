@@ -3,6 +3,7 @@ import sqlite3
 from flask import Blueprint, jsonify, request, flash, redirect, url_for
 from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 
 account_bp = Blueprint('account_bp', __name__)
 
@@ -152,3 +153,23 @@ def profile():
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "message": "個人資料已更新"})
+
+@account_bp.route('/api/reset_password/<int:user_id>', methods=['POST'])
+@login_required
+def reset_password(user_id):
+    if current_user.role_id != 1:  # 僅限超級管理員
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    password = data.get("password")
+    if not password:
+        return jsonify({"error": "Missing password"}), 400
+
+    hashed = generate_password_hash(password)
+    conn = sqlite3.connect('kao_power_water.db')
+    c = conn.cursor()
+    c.execute("UPDATE users SET password = ?, password_updated_at = ? WHERE id = ?", (hashed, datetime.now().isoformat(), user_id))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"success": True})
