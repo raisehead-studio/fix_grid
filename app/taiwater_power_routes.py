@@ -74,10 +74,11 @@ def update_taiwater_power_outage_report(id):
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE taiwater_power_reports
-        SET facility = ?, pole_number = ?, electricity_number = ?, reason = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
+        SET facility = ?, location = ?, pole_number = ?, electricity_number = ?, reason = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
         WHERE id = ? AND report_status = 0
     """, (
         data["facility"],
+        data["location"],
         data["pole_number"],
         data["electricity_number"],
         data["reason"],

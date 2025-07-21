@@ -333,7 +333,7 @@ function confirmReportRestore(entry_id) {
   entry = power_data[entry_id]
   currentEditingReportId = entry.id;
   document.getElementById('confirmReportText').innerHTML = `
-  ⚠️ 確定要切換 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 供電狀態？<br><br>
+  ⚠️ 確定要切換 <strong>#${entry.id} ${entry.location} 桿號 ${entry.pole_number} 電號 ${entry.electricity_number}</strong> 供電狀態？<br><br>
   此操作將立即生效，確認後將無法修改或復原。<br>
   請再次確認設定是否正確。`;
   document.getElementById('confirmReportRestoreModal').classList.remove('hidden');
