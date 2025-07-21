@@ -134,6 +134,8 @@ function openUploadModal() {
 
 function closeUploadModal() {
   document.getElementById("upload-modal").classList.add("hidden");
+  const fileInput = document.querySelector("#upload-form input[name='file']");
+  if (fileInput) fileInput.value = "";
 }
 
 function cancelOverwrite() {
@@ -198,15 +200,34 @@ function renderExcelData(jsonData) {
   jsonData.forEach((row, i) => {
     const tr = document.createElement("tr");
     tr.className = "border-t border-b";
-
     let rowHtml = '';
 
-    // 依序加入每欄
-    row.forEach(cell => {
-      rowHtml += `<td>${cell || ""}</td>`;
+    row.forEach((cell, colIndex) => {
+      let cellValue = cell;
+
+      // 第 10 欄（index 9）處理日期格式
+      if (colIndex === 10 && typeof cell === "number" && cell > 40000 && cell < 60000) {
+        const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+        const jsDate = new Date(excelEpoch.getTime() + cell * 86400000);
+        const formatter = new Intl.DateTimeFormat("zh-TW", {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          second: "numeric",
+          hour12: false,
+          timeZone: "UTC",
+        });
+
+        cellValue = formatter.format(jsDate);
+      }
+
+      rowHtml += `<td>${cellValue || ""}</td>`;
     });
 
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
 }
+
