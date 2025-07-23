@@ -2,23 +2,28 @@ from collections import defaultdict
 import sqlite3
 
 def get_user_by_username(username):
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT 
-            users.id, users.username, users.password, users.full_name, 
-            users.phone, users.district_id, districts.name, users.village_id, villages.name, users.role_id, 
-            roles.name AS role_name,
-            users.password_updated_at
-        FROM users
-        LEFT JOIN roles ON users.role_id = roles.id
-        LEFT JOIN districts ON users.district_id = districts.id
-        LEFT JOIN villages ON users.village_id = villages.id
-        WHERE users.username = ?
-    """, (username,))
-    
-    row = cursor.fetchone()
-    conn.close()
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                users.id, users.username, users.password, users.full_name, 
+                users.phone, users.district_id, districts.name, users.village_id, villages.name, users.role_id, 
+                roles.name AS role_name,
+                users.password_updated_at
+            FROM users
+            LEFT JOIN roles ON users.role_id = roles.id
+            LEFT JOIN districts ON users.district_id = districts.id
+            LEFT JOIN villages ON users.village_id = villages.id
+            WHERE users.username = ?
+        """, (username,))
+        row = cursor.fetchone()
+    except Exception as e:
+        print("DB error in get_user_by_username:", e)
+        return None
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
     if row:
         return {
@@ -38,21 +43,27 @@ def get_user_by_username(username):
     return None
 
 def get_user_by_id_with_role(user_id):
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT users.id, users.username, users.password, users.full_name, 
-            users.phone, users.district_id, districts.name, users.village_id, villages.name, users.role_id, 
-            roles.name AS role_name,
-            users.password_updated_at
-        FROM users
-        LEFT JOIN roles ON users.role_id = roles.id
-        LEFT JOIN districts ON users.district_id = districts.id
-        LEFT JOIN villages ON users.village_id = villages.id
-        WHERE users.id = ?
-    """, (user_id,))
-    row = cursor.fetchone()
-    conn.close()
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT users.id, users.username, users.password, users.full_name, 
+                users.phone, users.district_id, districts.name, users.village_id, villages.name, users.role_id, 
+                roles.name AS role_name,
+                users.password_updated_at
+            FROM users
+            LEFT JOIN roles ON users.role_id = roles.id
+            LEFT JOIN districts ON users.district_id = districts.id
+            LEFT JOIN villages ON users.village_id = villages.id
+            WHERE users.id = ?
+        """, (user_id,))
+        row = cursor.fetchone()
+    except Exception as e:
+        print("DB error in get_user_by_id_with_role:", e)
+        return None
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
     if row:
         return {
@@ -72,17 +83,22 @@ def get_user_by_id_with_role(user_id):
     return None
 
 def get_role_page_permissions_from_db(db_path="kao_power_water.db"):
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT r.name, p.page, p.permission
-        FROM role_permissions rp
-        JOIN roles r ON rp.role_id = r.id
-        JOIN permissions p ON rp.permission_id = p.id
-    """)
-    rows = cursor.fetchall()
-    conn.close()
+    try:
+        conn = sqlite3.connect(db_path, timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT r.name, p.page, p.permission
+            FROM role_permissions rp
+            JOIN roles r ON rp.role_id = r.id
+            JOIN permissions p ON rp.permission_id = p.id
+        """)
+        rows = cursor.fetchall()
+    except Exception as e:
+        print("DB error in get_role_page_permissions_from_db:", e)
+        return {}
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
     result = defaultdict(lambda: defaultdict(list))
     for role_name, page, permission in rows:

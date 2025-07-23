@@ -18,125 +18,150 @@ def get_db():
 @power_bp.route('/api/power_reports', methods=['GET'])
 @login_required
 def get_power_reports():
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    if current_user.role_id == 4:  # 里幹事
-        cursor.execute("""
-            SELECT po.*, d.name, v.name
-            FROM power_reports po
-            LEFT JOIN districts d ON po.district_id = d.id
-            LEFT JOIN villages v ON po.village_id = v.id
-            WHERE po.deleted_at IS NULL AND po.created_by = ?
-            ORDER BY po.created_at
-        """, (current_user.id,))
-    else:
-        cursor.execute("""
-            SELECT po.*, d.name, v.name
-            FROM power_reports po
-            LEFT JOIN districts d ON po.district_id = d.id
-            LEFT JOIN villages v ON po.village_id = v.id
-            WHERE po.deleted_at IS NULL
-            ORDER BY po.created_at
-        """)
-    rows = cursor.fetchall()
-    data = [dict(
-        id=row[0],
-        district_id=row[1],
-        district=row[-2],
-        village_id=row[2],
-        village=row[-1],
-        location=row[3],
-        reason=row[4],
-        count=row[5],
-        contact=row[6],
-        phone=row[7],
-        report_status=row[12],
-        report_restored_at=row[13],
-        taipower_status=row[14],
-        taipower_description=row[16],
-        taipower_eta_hours=row[17],
-        taipower_support=row[18],
-        taipower_restored_at=row[15],
-        created_at=row[9]
-    ) for row in rows]
-    conn.close()
-    return jsonify(data)
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        if current_user.role_id == 4:  # 里幹事
+            cursor.execute("""
+                SELECT po.*, d.name, v.name
+                FROM power_reports po
+                LEFT JOIN districts d ON po.district_id = d.id
+                LEFT JOIN villages v ON po.village_id = v.id
+                WHERE po.deleted_at IS NULL AND po.created_by = ?
+                ORDER BY po.created_at
+            """, (current_user.id,))
+        else:
+            cursor.execute("""
+                SELECT po.*, d.name, v.name
+                FROM power_reports po
+                LEFT JOIN districts d ON po.district_id = d.id
+                LEFT JOIN villages v ON po.village_id = v.id
+                WHERE po.deleted_at IS NULL
+                ORDER BY po.created_at
+            """)
+        rows = cursor.fetchall()
+        data = [dict(
+            id=row[0],
+            district_id=row[1],
+            district=row[-2],
+            village_id=row[2],
+            village=row[-1],
+            location=row[3],
+            reason=row[4],
+            count=row[5],
+            contact=row[6],
+            phone=row[7],
+            report_status=row[12],
+            report_restored_at=row[13],
+            taipower_status=row[14],
+            taipower_description=row[16],
+            taipower_eta_hours=row[17],
+            taipower_support=row[18],
+            taipower_restored_at=row[15],
+            created_at=row[9]
+        ) for row in rows]
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @power_bp.route("/api/power_reports", methods=["POST"])
 @login_required
 def create_power_report():
     data = request.get_json()
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO power_reports (district_id, village_id, location, reason, count, contact_name, contact_phone, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        current_user.district_id,
-        data["village_id"],
-        data["location"],
-        data["reason"],
-        data["count"],
-        data["contact_name"],
-        data["contact_phone"],
-        current_user.id
-    ))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO power_reports (district_id, village_id, location, reason, count, contact_name, contact_phone, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            current_user.district_id,
+            data["village_id"],
+            data["location"],
+            data["reason"],
+            data["count"],
+            data["contact_name"],
+            data["contact_phone"],
+            current_user.id
+        ))
+        conn.commit()
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @power_bp.route('/api/power_reports/<int:id>/update_report', methods=['POST'])
 @login_required
 def update_power_outage_report(id):
     data = request.get_json()
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE power_reports
-        SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
-        WHERE id = ? AND report_status = 0
-    """, (
-        data['location'],
-        data['reason'],
-        data['count'],
-        data['contact_name'],
-        data['contact_phone'],
-        id
-    ))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE power_reports
+            SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
+            WHERE id = ? AND report_status = 0
+        """, (
+            data['location'],
+            data['reason'],
+            data['count'],
+            data['contact_name'],
+            data['contact_phone'],
+            id
+        ))
+        conn.commit()
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @power_bp.route('/api/power_reports/<int:id>/toggle_report_status', methods=['POST'])
 @login_required
 def toggle_report_status(id):
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE power_reports
-        SET report_status = 1, report_restored_at = current_timestamp
-        WHERE id = ? AND report_status = 0
-    """, (id,))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "restored"})
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE power_reports
+            SET report_status = 1, report_restored_at = current_timestamp
+            WHERE id = ? AND report_status = 0
+        """, (id,))
+        conn.commit()
+        return jsonify({"status": "restored"})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @power_bp.route('/api/power_reports/<int:id>/update_taipower', methods=['POST'])
 @login_required
 def update_taipower_status(id):
     data = request.get_json()
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-        UPDATE power_reports
-        SET taipower_note = ?, taipower_eta_hours = ?, taipower_support = ?, taipower_restored_at = current_timestamp
-        WHERE id = ?
-    """, (
-        data['taipower_note'], data['taipower_eta_hours'], data['taipower_support'], id
-    ))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE power_reports
+            SET taipower_note = ?, taipower_eta_hours = ?, taipower_support = ?, taipower_restored_at = current_timestamp
+            WHERE id = ?
+        """, (
+            data['taipower_note'], data['taipower_eta_hours'], data['taipower_support'], id
+        ))
+        conn.commit()
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @power_bp.route('/api/power_reports/<int:id>/toggle_taipower_status', methods=['POST'])
 @login_required
@@ -152,18 +177,21 @@ def toggle_taipower_status(id):
     except ValueError:
         return jsonify({"error": "Invalid taipower_status, must be 0 or 1"}), 400
 
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE power_reports
-        SET taipower_status = ?, taipower_restored_at = current_timestamp
-        WHERE id = ?
-    """, (status, id))
-
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok", "taipower_status": status})
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE power_reports
+            SET taipower_status = ?, taipower_restored_at = current_timestamp
+            WHERE id = ?
+        """, (status, id))
+        conn.commit()
+        return jsonify({"status": "ok", "taipower_status": status})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @power_bp.route("/api/power_reports/export-power-report", methods=['POST'])
 @login_required
@@ -320,52 +348,54 @@ def generate_summary_sheet(ws, gov_data, tp_data, by="village"):
 @power_bp.route('/api/power_stats', methods=['GET'])
 @login_required
 def get_power_stats():
-    conn = get_db()
-    cursor = conn.cursor()
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
 
-    # 取得公所資料
-    if current_user.role_id == 4:
-        cursor.execute("""
-            SELECT po.*, d.name, v.name
-            FROM power_reports po
-            LEFT JOIN districts d ON po.district_id = d.id
-            LEFT JOIN villages v ON po.village_id = v.id
-            WHERE po.deleted_at IS NULL AND po.created_by = ?
-            ORDER BY po.created_at
-        """, (current_user.id,))
-    else:
-        cursor.execute("""
-            SELECT po.*, d.name, v.name
-            FROM power_reports po
-            LEFT JOIN districts d ON po.district_id = d.id
-            LEFT JOIN villages v ON po.village_id = v.id
-            WHERE po.deleted_at IS NULL
-            ORDER BY po.created_at
-        """)
-    gov_rows = cursor.fetchall()
+        if current_user.role_id == 4:
+            cursor.execute("""
+                SELECT po.*, d.name, v.name
+                FROM power_reports po
+                LEFT JOIN districts d ON po.district_id = d.id
+                LEFT JOIN villages v ON po.village_id = v.id
+                WHERE po.deleted_at IS NULL AND po.created_by = ?
+                ORDER BY po.created_at
+            """, (current_user.id,))
+        else:
+            cursor.execute("""
+                SELECT po.*, d.name, v.name
+                FROM power_reports po
+                LEFT JOIN districts d ON po.district_id = d.id
+                LEFT JOIN villages v ON po.village_id = v.id
+                WHERE po.deleted_at IS NULL
+                ORDER BY po.created_at
+            """)
+        gov_rows = cursor.fetchall()
 
-    gov_data = []
-    for row in gov_rows:
-        gov_data.append(dict(
+        gov_data = [dict(
             district_id=row[1],
             village_id=row[2],
             district=row[-2],
             village=row[-1],
             gov_count=row[5]
-        ))
+        ) for row in gov_rows]
 
-    # 取得台電資料
-    cursor.execute("""
-        SELECT tr.district_id, tr.village_id, d.name, v.name, SUM(tr.count)
-        FROM taipower_reports tr
-        LEFT JOIN districts d ON tr.district_id = d.id
-        LEFT JOIN villages v ON tr.village_id = v.id
-        GROUP BY tr.district_id, tr.village_id
-    """)
-    tp_rows = cursor.fetchall()
+        cursor.execute("""
+            SELECT tr.district_id, tr.village_id, d.name, v.name, SUM(tr.count)
+            FROM taipower_reports tr
+            LEFT JOIN districts d ON tr.district_id = d.id
+            LEFT JOIN villages v ON tr.village_id = v.id
+            GROUP BY tr.district_id, tr.village_id
+        """)
+        tp_rows = cursor.fetchall()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
     tp_map = {(row[0], row[1]): {'district': row[2], 'village': row[3], 'tp_count': row[4]} for row in tp_rows}
 
-    # 合併 key
     combined_map = {}
     for row in gov_data:
         key = (row['district_id'], row['village_id'])
@@ -391,19 +421,23 @@ def get_power_stats():
         else:
             combined_map[key]['tp_count'] = tp['tp_count']
 
-    conn.close()
     return jsonify(list(combined_map.values()))
 
 @power_bp.route("/api/taipower_reports", methods=["POST"])
 @login_required
 def create_taipower_report():
     data = request.get_json()
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO taipower_reports (district_id, village_id, count, created_by)
-        VALUES (?, ?, ?, ?)
-    """, (data["district_id"], data["village_id"], data["count"], current_user.id))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO taipower_reports (district_id, village_id, count, created_by)
+            VALUES (?, ?, ?, ?)
+        """, (data["district_id"], data["village_id"], data["count"], current_user.id))
+        conn.commit()
+        return jsonify({"status": "ok"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()

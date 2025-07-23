@@ -34,12 +34,18 @@ def needs_password_update(password_updated_at, user_id):
         return True
 
     # 沒有登入紀錄
-    conn = sqlite3.connect('kao_power_water.db')
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM user_login_logs WHERE user_id = ?", (user_id,))
-    count = c.fetchone()[0]
-    conn.close()
-    return count == 0
+    try:
+        conn = sqlite3.connect('kao_power_water.db', timeout=10)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM user_login_logs WHERE user_id = ?", (user_id,))
+        count = c.fetchone()[0]
+        return count == 0
+    except Exception as e:
+        print("DB error in needs_password_update:", e)
+        return True  # fallback: require password update
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 def validate_password(pwd):
     if len(pwd) < 12:
@@ -88,14 +94,19 @@ def create_app():
             self.ip = ip
 
     def insert_login_log(user_id, ip):
-        conn = sqlite3.connect('kao_power_water.db')
-        c = conn.cursor()
-        c.execute('''
-            INSERT INTO user_login_logs (user_id, ip, login_time)
-            VALUES (?, ?, ?)
-        ''', (user_id, ip, datetime.now()))
-        conn.commit()
-        conn.close()
+        try:
+            conn = sqlite3.connect('kao_power_water.db', timeout=10)
+            c = conn.cursor()
+            c.execute('''
+                INSERT INTO user_login_logs (user_id, ip, login_time)
+                VALUES (?, ?, ?)
+            ''', (user_id, ip, datetime.now()))
+            conn.commit()
+        except Exception as e:
+            print("DB error in insert_login_log:", e)
+        finally:
+            if 'conn' in locals():
+                conn.close()
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -140,31 +151,33 @@ def create_app():
             ip = request.remote_addr
             new_password = request.form['new_password']
 
-            # 取得原本的加密密碼
-            conn = sqlite3.connect('kao_power_water.db')
-            c = conn.cursor()
-            c.execute("SELECT password FROM users WHERE id = ?", (current_user.id,))
-            row = c.fetchone()
-            old_password_hash = row[0] if row else None
+            try:
+                # 取得原本的加密密碼
+                conn = sqlite3.connect('kao_power_water.db', timeout=10)
+                c = conn.cursor()
+                c.execute("SELECT password FROM users WHERE id = ?", (current_user.id,))
+                row = c.fetchone()
+                old_password_hash = row[0] if row else None
 
-            # 先檢查格式
-            if not validate_password(new_password):
-                flash("密碼格式不符：需至少12碼，包含大小寫英文字母、數字、特殊符號", "danger")
-                conn.close()
+                # 檢查格式與一致性
+                if not validate_password(new_password):
+                    flash("密碼格式不符：需至少12碼，包含大小寫英文字母、數字、特殊符號", "danger")
+                    return render_template('force_change_password.html')
+
+                if old_password_hash and check_password_hash(old_password_hash, new_password):
+                    flash("新密碼不得與舊密碼相同", "danger")
+                    return render_template('force_change_password.html')
+
+                hashed = generate_password_hash(new_password)
+                c.execute("UPDATE users SET password = ?, password_updated_at = ? WHERE id = ?", (hashed, datetime.now().isoformat(), current_user.id))
+                conn.commit()
+            except Exception as e:
+                print("DB error in force_change_password:", e)
+                flash("更新密碼失敗", "danger")
                 return render_template('force_change_password.html')
-
-            # 再檢查是否與舊密碼相同
-            if old_password_hash and check_password_hash(old_password_hash, new_password):
-                flash("新密碼不得與舊密碼相同", "danger")
-                conn.close()
-                return render_template('force_change_password.html')
-
-            hashed = generate_password_hash(new_password)
-            conn = sqlite3.connect('kao_power_water.db')
-            c = conn.cursor()
-            c.execute("UPDATE users SET password = ?, password_updated_at = ? WHERE id = ?", (hashed, datetime.now().isoformat(), current_user.id))
-            conn.commit()
-            conn.close()
+            finally:
+                if 'conn' in locals():
+                    conn.close()
 
             insert_login_log(current_user.id, ip)
 
@@ -191,25 +204,32 @@ def create_app():
         if current_user.role_id != 1 and current_user.id != user_id:
             return {"error": "Unauthorized access"}, 403
 
-        conn = sqlite3.connect("kao_power_water.db")
-        c = conn.cursor()
-        c.execute("""
-            SELECT ip, login_time
-            FROM user_login_logs
-            WHERE user_id = ?
-            ORDER BY login_time DESC
-            LIMIT 100
-        """, (user_id,))
-        logs = []
-        for row in c.fetchall():
-            ip, raw_time = row
-            try:
-                parsed_time = datetime.fromisoformat(raw_time)
-                formatted_time = parsed_time.strftime('%Y-%m-%d %H:%M:%S')
-            except:
-                formatted_time = raw_time  # fallback in case of error
-            logs.append({"ip": ip, "login_time": formatted_time})
-        conn.close()
+        try:
+            conn = sqlite3.connect("kao_power_water.db", timeout=10)
+            c = conn.cursor()
+            c.execute("""
+                SELECT ip, login_time
+                FROM user_login_logs
+                WHERE user_id = ?
+                ORDER BY login_time DESC
+                LIMIT 100
+            """, (user_id,))
+            logs = []
+            for row in c.fetchall():
+                ip, raw_time = row
+                try:
+                    parsed_time = datetime.fromisoformat(raw_time)
+                    formatted_time = parsed_time.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    formatted_time = raw_time
+                logs.append({"ip": ip, "login_time": formatted_time})
+            return {"logs": logs}
+        except Exception as e:
+            print("DB error in /api/login_logs:", e)
+            return {"error": "資料庫錯誤"}, 500
+        finally:
+            if 'conn' in locals():
+                conn.close()
         return {"logs": logs}
 
     @app.route('/page/<page>')
