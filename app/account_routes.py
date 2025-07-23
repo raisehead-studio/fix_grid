@@ -84,22 +84,35 @@ def get_villages(district_id):
 @login_required
 def create_account():
     data = request.get_json()
-    conn = sqlite3.connect("kao_power_water.db")
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO users (username, password, full_name, phone, role_id, district_id, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
-        (
-            data['username'],
-            generate_password_hash(data['password']),
-            data['full_name'],
-            data['phone'],
-            data['role_id'],
-            data['district_id'],
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+
+        # 先檢查 username 是否已存在
+        cursor.execute("SELECT id FROM users WHERE username = ?", (data['username'],))
+        if cursor.fetchone():
+            return jsonify({'status': 'error', 'message': '帳號已存在'}), 400
+
+        cursor.execute(
+            "INSERT INTO users (username, password, full_name, phone, role_id, district_id, password_updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+            (
+                data['username'],
+                generate_password_hash(data['password']),
+                data['full_name'],
+                data['phone'],
+                data['role_id'],
+                data['district_id'],
+            )
         )
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'ok'})
+        conn.commit()
+        return jsonify({'status': 'ok'})
+    except IntegrityError:
+        return jsonify({'status': 'error', 'message': '資料庫錯誤'}), 500
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 @account_bp.route("/profile", methods=["POST"])
 @login_required

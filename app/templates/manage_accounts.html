@@ -62,19 +62,17 @@
       const roleId = document.getElementById('new-role').value;
       const districtId = document.getElementById('new-district').value;
 
-      // 驗證：必填欄位
+      // 驗證
       if (!username || !password || !fullName || !phone || !roleId) {
         alert("請完整填寫帳號、密碼、姓名、電話與角色");
         return;
       }
 
-      // 驗證：電話需為 10 碼數字（例如 0912345678）
       if (!/^\d{10}$/.test(phone)) {
         alert("電話格式不正確，需為 10 碼數字，例如：0912345678");
         return;
       }
 
-      // 驗證：密碼格式
       const pwRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{12,}$/;
       if (!pwRegex.test(password)) {
         alert("密碼需至少12碼，包含大小寫英文、數字與特殊符號");
@@ -90,13 +88,20 @@
         district_id: parseInt(districtId || null)
       };
 
-      await fetch('/api/create_account', {
+      const res = await fetch('/api/create_account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      const result = await res.json();
+      if (!res.ok || result.status !== 'ok') {
+        alert(result.message || "建立帳號失敗");
+        return;
+      }
+
       document.getElementById('createModal').classList.add('hidden');
+      resetCreateUserForm();
       loadUsers();
     }
 
@@ -204,8 +209,7 @@
   </div>
 
   <!-- Modal -->
-  <div id="createModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center hidden"
-    onclick="closeModalOnOutsideClick(event)">
+  <div id="createModal" class="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center hidden">
     <div class="bg-white p-6 rounded shadow-lg w-[400px] space-y-4" onclick="event.stopPropagation()">
       <h2 class="text-xl font-bold">新增帳號</h2>
       <div>
