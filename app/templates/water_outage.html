@@ -22,7 +22,7 @@
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
-  <div class="p-4 flex justify-between items-center">
+  <div class="sticky top-[56px] z-40 bg-gray-100 p-4 flex justify-between items-center border-b">
     <h2 class="text-xl font-bold">
       {% if current_user.role_id == 4 %}
         停水通報
@@ -42,7 +42,7 @@
     </div>
   </div>
 
-  <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
+  <div class="sticky top-[120px] z-30 bg-white flex flex-wrap gap-4 p-4 items-center border-b">
     <!-- 篩選 -->
     <div>
       <label class="font-medium mr-2">行政區：</label>
@@ -72,10 +72,10 @@
     {% else %}
     <div class="col-span-5 bg-white shadow rounded p-4">
     {% endif %}
-      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所回報</h3>
+      <h3 class="sticky top-[182px] z-20 bg-white text-lg font-medium">公所回報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
-          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
+          <tr class="sticky top-[206px] z-10 bg-white border-b font-semibold text-left">
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('id')">序號 <span id="sort-indicator-id"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('district')">行政區 <span id="sort-indicator-district"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('village')">里 <span id="sort-indicator-village"></span></th>
@@ -98,10 +98,10 @@
     <!-- 右：台電狀態表格 -->
     {% if 'view_status' in user_permissions %}
     <div class="col-span-2 bg-white shadow rounded p-4">
-      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">台水填報</h3>
+      <h3 class="sticky top-[182px] z-20 bg-white text-lg font-medium">台水填報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
-          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
+          <tr class="sticky top-[206px] z-10 bg-white border-b font-semibold text-left">
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_status')">狀態 <span id="sort-indicator-taiwater_status"></span><button id="filterBtnTaipowerStatus" onclick="cycleTaipowerStatusFilter(event)" class="ml-1">❓</button></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_description')">回報說明 <span id="sort-indicator-taiwater_description"></span></th>
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taiwater_eta_hours')">預估修復時間 <span id="sort-indicator-taiwater_eta_hours"></span></th>

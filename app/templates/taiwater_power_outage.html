@@ -22,7 +22,7 @@
 </head>
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
-  <div class="p-4 flex justify-between">
+  <div class="sticky top-[56px] z-40 bg-gray-100 p-4 flex justify-between items-center border-b">
     <h2 class="text-xl font-bold">台水公司停電彙整表</h2>
     <div class="flex gap-2">
       {% if 'excel' in user_permissions %}
@@ -34,7 +34,7 @@
     </div>
   </div>
 
-  <div class="flex flex-wrap gap-4 p-4 bg-white rounded shadow mb-4 items-center">
+  <div class="sticky top-[120px] z-30 bg-white flex flex-wrap gap-4 p-4 items-center border-b">
     <!-- 篩選 -->
     {% if 'view_status' in user_permissions %}
     <div>
@@ -54,10 +54,10 @@
     {% else %}
     <div class="col-span-5 bg-white shadow rounded p-4">
     {% endif %}
-      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">公所回報</h3>
+      <h3 class="sticky top-[182px] z-20 bg-white text-lg font-medium">公所回報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
-          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
+          <tr class="sticky top-[206px] z-10 bg-white border-b font-semibold text-left">
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('id')">
               序號 <span id="sort-indicator-id"></span>
             </th>
@@ -100,10 +100,10 @@
     <!-- 右：台電狀態表格 -->
     {% if 'view_status' in user_permissions %}
     <div class="col-span-2 bg-white shadow rounded p-4">
-      <h3 class="sticky top-[56px] z-30 bg-white text-lg font-medium">台電填報</h3>
+      <h3 class="sticky top-[182px] z-20 bg-white text-lg font-medium">台電填報</h3>
       <table class="w-full text-sm table-auto">
         <thead>
-          <tr class="sticky top-[80px] z-20 bg-white border-b font-semibold text-left">
+          <tr class="sticky top-[206px] z-10 bg-white border-b font-semibold text-left">
             <th class="cursor-pointer hover:underline whitespace-nowrap" onclick="setSort('taipower_status')">
               狀態 <span id="sort-indicator-taipower_status"></span>
             </th>
