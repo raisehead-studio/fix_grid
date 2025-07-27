@@ -183,3 +183,32 @@ def toggle_taiwater_status(id):
         return jsonify({"error": str(e)}), 500
     finally:
         conn.close()
+
+@water_bp.route('/api/water_reports/batch_delete', methods=['POST'])
+@login_required
+def batch_delete_water_reports():
+    data = request.get_json()
+    ids = data.get('ids', [])
+    
+    if not ids:
+        return jsonify({'error': 'No IDs provided'}), 400
+    
+    try:
+        conn = sqlite3.connect(DB, timeout=TIMEOUT)
+        cursor = conn.cursor()
+        
+        # 軟刪除：更新 deleted_at 欄位
+        placeholders = ','.join(['?' for _ in ids])
+        cursor.execute(f"""
+            UPDATE water_reports 
+            SET deleted_at = datetime('now') 
+            WHERE id IN ({placeholders}) AND deleted_at IS NULL
+        """, ids)
+        
+        conn.commit()
+        return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
