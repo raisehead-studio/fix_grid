@@ -49,16 +49,17 @@ def get_power_reports():
             location=row[3],
             reason=row[4],
             count=row[5],
-            contact=row[6],
-            phone=row[7],
-            report_status=row[12],
-            report_restored_at=row[13],
-            taipower_status=row[14],
-            taipower_description=row[16],  # 這是 taipower_note 欄位
-            taipower_eta_hours=row[17],
-            taipower_support=row[18],
-            taipower_restored_at=row[15],
-            created_at=row[9]
+            original_count=row[6],  # 新增 original_count
+            contact=row[7],
+            phone=row[8],
+            report_status=row[13],
+            report_restored_at=row[14],
+            taipower_status=row[15],
+            taipower_description=row[17],  # 這是 taipower_note 欄位
+            taipower_eta_hours=row[18],
+            taipower_support=row[19],
+            taipower_restored_at=row[16],
+            created_at=row[10]
         ) for row in rows]
         return jsonify(data)
     except Exception as e:
@@ -75,14 +76,15 @@ def create_power_report():
         conn = sqlite3.connect("kao_power_water.db", timeout=10)
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO power_reports (district_id, village_id, location, reason, count, contact_name, contact_phone, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO power_reports (district_id, village_id, location, reason, count, original_count, contact_name, contact_phone, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             current_user.district_id,
             data["village_id"],
             data["location"],
             data["reason"],
             data["count"],
+            data["count"],  # original_count 初始值等於 count
             data["contact_name"],
             data["contact_phone"],
             current_user.id

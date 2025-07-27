@@ -436,7 +436,7 @@ function exportToExcel() {
       e.district,
       e.village,
       e.location,
-      e.count,
+      e.original_count,  // 使用 original_count 而不是 count
       e.reason,
       e.contact,
       e.phone,
