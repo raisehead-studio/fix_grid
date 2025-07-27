@@ -54,7 +54,7 @@ def get_power_reports():
             report_status=row[12],
             report_restored_at=row[13],
             taipower_status=row[14],
-            taipower_description=row[16],
+            taipower_description=row[16],  # 這是 taipower_note 欄位
             taipower_eta_hours=row[17],
             taipower_support=row[18],
             taipower_restored_at=row[15],
@@ -102,18 +102,35 @@ def update_power_outage_report(id):
     try:
         conn = sqlite3.connect("kao_power_water.db", timeout=10)
         cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE power_reports
-            SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
-            WHERE id = ? AND report_status = 0
-        """, (
-            data['location'],
-            data['reason'],
-            data['count'],
-            data['contact_name'],
-            data['contact_phone'],
-            id
-        ))
+        
+        # 如果停電戶數為 0，自動將狀態改為已復電
+        if data['count'] == 0:
+            cursor.execute("""
+                UPDATE power_reports
+                SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, 
+                    report_status = 1, report_restored_at = current_timestamp, updated_at = datetime('now')
+                WHERE id = ? AND report_status = 0
+            """, (
+                data['location'],
+                data['reason'],
+                data['count'],
+                data['contact_name'],
+                data['contact_phone'],
+                id
+            ))
+        else:
+            cursor.execute("""
+                UPDATE power_reports
+                SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
+                WHERE id = ? AND report_status = 0
+            """, (
+                data['location'],
+                data['reason'],
+                data['count'],
+                data['contact_name'],
+                data['contact_phone'],
+                id
+            ))
         conn.commit()
         return jsonify({"status": "ok"})
     except Exception as e:

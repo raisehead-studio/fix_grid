@@ -352,10 +352,24 @@ function openEditReport(entry_id) {
 }
 
 function submitEditReport() {
+  const count = parseInt(document.getElementById('edit-count').value);
+  
+  // 如果停電戶數改為 0，顯示確認視窗
+  if (count === 0) {
+    const entry = power_data[currentEditingReportId];
+    document.getElementById('confirmReportText').innerHTML = `
+    ⚠️ 確定要將 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 的停電戶數改為 0？<br><br>
+    此操作將自動將停電狀態改為已復電，確認後將無法修改或復原。<br>
+    請再次確認設定是否正確。`;
+    document.getElementById('confirmReportRestoreModal').classList.remove('hidden');
+    return;
+  }
+  
+  // 正常更新流程
   const payload = {
     location: document.getElementById('edit-location').value,
     reason: document.getElementById('edit-reason').value,
-    count: parseInt(document.getElementById('edit-count').value),
+    count: count,
     contact_name: document.getElementById('edit-contact').value,
     contact_phone: document.getElementById('edit-phone').value
   };
@@ -405,6 +419,34 @@ function confirmReportRestore(entry_id) {
 }
 
 function submitReportRestore() {
+  // 檢查是否從編輯視窗觸發（停電戶數為 0 的情況）
+  const editCountElement = document.getElementById('edit-count');
+  const isFromEditModal = !document.getElementById('editReportModal').classList.contains('hidden');
+  
+  if (isFromEditModal && editCountElement) {
+    const count = parseInt(editCountElement.value);
+    if (count === 0) {
+      // 從編輯視窗觸發，使用 update_report API
+      const payload = {
+        location: document.getElementById('edit-location').value,
+        reason: document.getElementById('edit-reason').value,
+        count: count,
+        contact_name: document.getElementById('edit-contact').value,
+        contact_phone: document.getElementById('edit-phone').value
+      };
+      fetch(`/api/power_reports/${currentEditingReportId}/update_report`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      }).then(() => {
+        closeConfirmReportRestore();
+        fetchReports();
+      });
+      return;
+    }
+  }
+  
+  // 從狀態切換按鈕觸發，使用 toggle_report_status API
   fetch(`/api/power_reports/${currentEditingReportId}/toggle_report_status`, {
     method: 'POST'
   }).then(() => {
@@ -459,6 +501,10 @@ function closeEditStatusModal() {
 }
 function closeConfirmReportRestore() {
   closeModal('confirmReportRestoreModal');
+  // 如果編輯視窗是開啟的，也關閉它
+  if (!document.getElementById('editReportModal').classList.contains('hidden')) {
+    closeModal('editReportModal');
+  }
 }
 function closeConfirmStatusRestore() {
   closeModal('confirmStatusRestoreModal');
