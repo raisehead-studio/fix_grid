@@ -139,6 +139,35 @@ def update_power_outage_report(id):
         if 'conn' in locals():
             conn.close()
 
+@power_bp.route('/api/power_reports/batch_delete', methods=['POST'])
+@login_required
+def batch_delete_power_reports():
+    data = request.get_json()
+    ids = data.get('ids', [])
+    
+    if not ids:
+        return jsonify({'error': 'No IDs provided'}), 400
+    
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+
+        # 軟刪除：更新 deleted_at 欄位
+        placeholders = ','.join(['?' for _ in ids])
+        cursor.execute(f"""
+            UPDATE power_reports 
+            SET deleted_at = datetime('now') 
+            WHERE id IN ({placeholders}) AND deleted_at IS NULL
+        """, ids)
+        
+        conn.commit()
+        return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
 @power_bp.route('/api/power_reports/<int:id>/toggle_report_status', methods=['POST'])
 @login_required
 def toggle_report_status(id):

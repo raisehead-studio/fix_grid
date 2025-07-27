@@ -2,6 +2,9 @@ let sortField = '';
 let sortOrder = 'asc';
 let reportStatusFilter = 'all';    // 'all' | 'restored' | 'unrestored'
 let taipowerStatusFilter = 'all';  // 'all' | 'restored' | 'unrestored'
+let isDeleteMode = false;          // 是否處於刪除模式
+let selectedItems = new Set();     // 選中的項目
+let currentDeleteId = null;        // 當前要刪除的項目 ID
 
 function cycleReportStatusFilter(event) {
   event.stopPropagation();  // 防止觸發排序
@@ -49,6 +52,141 @@ function syncRowHeights(leftSelector, rightSelector) {
     leftRows[i].style.height = `${maxHeight}px`;
     rightRows[i].style.height = `${maxHeight}px`;
   }
+}
+
+// 切換刪除模式
+function toggleDeleteMode() {
+  isDeleteMode = !isDeleteMode;
+  selectedItems.clear();
+  
+  const deleteBtn = document.querySelector('button[onclick="toggleDeleteMode()"]');
+  const selectAllTh = document.getElementById('th-select-all');
+  const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  
+  if (isDeleteMode) {
+    deleteBtn.textContent = '取消刪除';
+    deleteBtn.className = 'bg-gray-600 text-white px-4 py-2 rounded';
+    selectAllTh.style.display = '';
+    batchDeleteBtn.style.display = '';
+  } else {
+    deleteBtn.textContent = '刪除資料';
+    deleteBtn.className = 'bg-red-600 text-white px-4 py-2 rounded';
+    selectAllTh.style.display = 'none';
+    batchDeleteBtn.style.display = 'none';
+    // 重置全選勾選框狀態
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = false;
+    }
+  }
+  
+  fetchReports();
+}
+
+// 全選/取消全選
+function toggleSelectAll() {
+  const checkboxes = document.querySelectorAll('input[type="checkbox"][data-item-id]');
+  const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+  
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = selectAllCheckbox.checked;
+    if (selectAllCheckbox.checked) {
+      selectedItems.add(checkbox.dataset.itemId);
+    } else {
+      selectedItems.delete(checkbox.dataset.itemId);
+    }
+  });
+  
+  updateDeleteButton();
+}
+
+// 切換單個項目選中狀態
+function toggleItemSelection(itemId) {
+  if (selectedItems.has(itemId)) {
+    selectedItems.delete(itemId);
+  } else {
+    selectedItems.add(itemId);
+  }
+  
+  updateDeleteButton();
+}
+
+// 更新刪除按鈕狀態
+function updateDeleteButton() {
+  const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+  if (selectedItems.size > 0) {
+    batchDeleteBtn.textContent = `批量刪除 (${selectedItems.size})`;
+    batchDeleteBtn.disabled = false;
+    batchDeleteBtn.className = 'bg-red-600 text-white px-4 py-2 rounded';
+  } else {
+    batchDeleteBtn.textContent = '批量刪除';
+    batchDeleteBtn.disabled = true;
+    batchDeleteBtn.className = 'bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed';
+  }
+}
+
+// 確認刪除單個項目
+function confirmDeleteReport() {
+  const entry = power_data[currentEditingReportId];
+  currentDeleteId = currentEditingReportId; // 使用相同的 ID
+  document.getElementById('confirmDeleteText').innerHTML = `
+  ⚠️ 確定要刪除 <strong>#${entry.id} ${entry.district} ${entry.village} ${entry.location}</strong> 這筆資料？<br><br>
+  此操作將永久刪除該筆資料，確認後將無法復原。<br>
+  請再次確認是否要刪除。`;
+  document.getElementById('confirmDeleteModal').classList.remove('hidden');
+}
+
+// 確認批量刪除
+function confirmBatchDelete() {
+  if (selectedItems.size === 0) return;
+  
+  const itemList = Array.from(selectedItems).map(id => {
+    const entry = power_data[id];
+    return `#${entry.id} ${entry.district} ${entry.village} ${entry.location}`;
+  }).join('<br>');
+  
+  document.getElementById('confirmDeleteText').innerHTML = `
+  ⚠️ 確定要刪除以下 ${selectedItems.size} 筆資料？<br><br>
+  ${itemList}<br><br>
+  此操作將永久刪除這些資料，確認後將無法復原。<br>
+  請再次確認是否要刪除。`;
+  document.getElementById('confirmDeleteModal').classList.remove('hidden');
+}
+
+// 執行刪除
+function submitDelete() {
+  const idsToDelete = currentDeleteId ? [currentDeleteId] : Array.from(selectedItems);
+  const isSingleDelete = !!currentDeleteId;
+  
+  fetch('/api/power_reports/batch_delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: idsToDelete })
+  }).then(res => {
+    if (res.ok) {
+      closeConfirmDeleteModal();
+      
+      if (isSingleDelete) {
+        // 單筆刪除：先關閉編輯視窗，再重置狀態
+        closeEditReportModal();
+        currentDeleteId = null;
+        // 延遲一下再重新載入資料，確保 modal 完全關閉
+        setTimeout(() => {
+          fetchReports();
+        }, 100);
+      } else {
+        // 批量刪除：退出刪除模式
+        toggleDeleteMode();
+      }
+    } else {
+      alert('刪除失敗！');
+    }
+  });
+}
+
+// 關閉刪除確認 Modal
+function closeConfirmDeleteModal() {
+  closeModal('confirmDeleteModal');
 }
 
 function openReportModal() {
@@ -192,7 +330,18 @@ async function fetchReports() {
     const reportRow = document.createElement('tr');
     const canEditReport = userPermissions.includes("edit_report");
     reportRow.className = "border-b";
+    
+    // 刪除模式的勾選框
+    const checkboxCell = isDeleteMode && userPermissions.includes("excel") 
+      ? `<td class="text-center">
+          <input type="checkbox" data-item-id="${entry.id}" 
+                 onchange="toggleItemSelection(${entry.id})" 
+                 class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+         </td>`
+      : '';
+    
     reportRow.innerHTML = `
+      ${checkboxCell}
       <td>${entry.id}</td>
       <td>${entry.district}</td>
       <td>${entry.village}</td>
@@ -210,7 +359,7 @@ async function fetchReports() {
               : '<span class="text-red-600 whitespace-nowrap">未復電</span>')}
       </td>
       <td class="text-center">
-        ${!entry.report_status && canEditReport 
+        ${!entry.report_status && canEditReport && !isDeleteMode
           ? `<button onclick="openEditReport(${entry.id})" class="text-blue-600">✏️</button>` 
           : ''}
       </td>
@@ -491,7 +640,10 @@ function submitStatusRestore() {
 }
 
 function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.add('hidden');
+  }
 }
 function closeEditReportModal() {
   closeModal('editReportModal');

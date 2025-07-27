@@ -40,6 +40,7 @@
     <div class="flex gap-2">
       {% if 'excel' in user_permissions %}
       <button onclick="exportToExcel()" class="bg-gray-500 text-white px-4 py-2 rounded">匯出 Excel</button>
+      <button onclick="toggleDeleteMode()" class="bg-red-600 text-white px-4 py-2 rounded">刪除資料</button>
       {% endif %}
       <button onclick="window.print()" class="bg-gray-500 text-white px-4 py-2 rounded">列印</button>
       {% if 'create_report' in user_permissions %}
@@ -69,6 +70,9 @@
     </div>
     {% endif %}
     <button onclick="clearFilters()" class="bg-gray-300 text-black px-3 py-1 rounded">清除篩選排序</button>
+    <button id="batchDeleteBtn" onclick="confirmBatchDelete()" class="bg-gray-400 text-white px-4 py-2 rounded cursor-not-allowed" disabled style="display: none;">
+      批量刪除
+    </button>
   </div>
 
   <div class="grid grid-cols-7 gap-4">
@@ -82,6 +86,10 @@
       <table class="w-full text-sm table-auto">
         <thead class="whitespace-nowrap">
           <tr class="sticky top-[206px] z-10 bg-white border-b font-semibold text-left">
+            <th id="th-select-all" class="text-center" style="display: none;">
+              <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll()" 
+                     class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+            </th>
             <th class="cursor-pointer hover:underline" onclick="setSort('id')">
               序號 <span id="sort-indicator-id"></span>
             </th>
@@ -227,9 +235,12 @@
           <input id="edit-phone" class="w-full border p-2" />
         </div>
       </div>
-      <div class="mt-6 flex justify-end gap-4">
-        <button onclick="closeModal('editReportModal')" class="text-gray-600">取消</button>
-        <button onclick="submitEditReport()" class="bg-blue-600 text-white px-4 py-2 rounded">儲存</button>
+      <div class="mt-6 flex justify-between items-center">
+        <button onclick="confirmDeleteReport()" class="text-red-600 hover:text-red-800 font-medium">刪除此資料</button>
+        <div class="flex gap-4">
+          <button onclick="closeModal('editReportModal')" class="text-gray-600">取消</button>
+          <button onclick="submitEditReport()" class="bg-blue-600 text-white px-4 py-2 rounded">儲存</button>
+        </div>
       </div>
     </div>
   </div>
@@ -282,6 +293,19 @@
       <div class="flex justify-end gap-4">
         <button onclick="closeConfirmStatusRestore()" class="text-gray-600">取消</button>
         <button onclick="submitStatusRestore()" class="bg-red-600 text-white px-4 py-2 rounded">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗑️ 刪除確認 Modal -->
+  <div id="confirmDeleteModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onclick="checkModalClick(event, 'confirmDeleteModal')">
+    <div class="bg-white rounded-lg p-6 w-[500px]" onclick="event.stopPropagation()">
+      <h2 class="text-lg font-bold text-red-600 mb-4">確認刪除</h2>
+      <p id="confirmDeleteText" class="text-sm text-gray-700 mb-6"></p>
+      <div class="flex justify-end gap-4">
+        <button onclick="closeConfirmDeleteModal()" class="text-gray-600">取消</button>
+        <button onclick="submitDelete()" class="bg-red-600 text-white px-4 py-2 rounded">確認刪除</button>
       </div>
     </div>
   </div>
