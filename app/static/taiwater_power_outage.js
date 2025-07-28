@@ -548,12 +548,7 @@ function closeConfirmStatusRestore() {
   closeModal('confirmStatusRestoreModal');
 }
 
-function checkModalClick(event, modalId) {
-  const modal = document.getElementById(modalId);
-  if (event.target === modal) {
-    modal.classList.add("hidden");
-  }
-}
+
 
 // window.onload = async () => {
 //   loadFilterDistricts()
