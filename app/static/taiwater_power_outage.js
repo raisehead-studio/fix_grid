@@ -107,14 +107,8 @@ function confirmDeleteReport() {
 function confirmBatchDelete() {
   if (selectedItems.size === 0) return;
   
-  const itemList = Array.from(selectedItems).map(id => {
-    const entry = power_data[id];
-    return `#${entry.id} ${entry.facility} ${entry.location}`;
-  }).join('<br>');
-  
   document.getElementById('confirmDeleteText').innerHTML = `
-  ⚠️ 確定要刪除以下 ${selectedItems.size} 筆資料？<br><br>
-  ${itemList}<br><br>
+  ⚠️ 確定要刪除選取的 ${selectedItems.size} 筆資料？<br><br>
   此操作將永久刪除這些資料，確認後將無法復原。<br>
   請再次確認是否要刪除。`;
   document.getElementById('confirmDeleteModal').classList.remove('hidden');
