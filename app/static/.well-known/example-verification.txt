@@ -1,0 +1,3 @@
+這是一個 DNS 驗證檔案的範例
+您可以在這裡放置任何驗證內容
+例如：acme-challenge token、DNS TXT 記錄驗證等

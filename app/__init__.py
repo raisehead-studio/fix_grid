@@ -61,7 +61,9 @@ def validate_password(pwd):
     return True
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                static_folder='static',
+                static_url_path='/static')
     app.secret_key = 'supersecretkey'
 
     login_manager.init_app(app)
@@ -72,6 +74,27 @@ def create_app():
     app.register_blueprint(water_bp)
     app.register_blueprint(taiwater_power_bp)
     app.register_blueprint(disaster_bp)
+
+    # DNS 驗證路由 - 不需要登入驗證
+    @app.route('/.well-known/<path:filename>')
+    def dns_verification(filename):
+        """處理 DNS 驗證檔案，例如 /.well-known/acme-challenge/xxx"""
+        try:
+            return send_file(f'static/.well-known/{filename}')
+        except FileNotFoundError:
+            abort(404)
+    
+    @app.route('/<path:filename>')
+    def public_files(filename):
+        """處理其他公開檔案，例如 /robots.txt, /sitemap.xml 等"""
+        # 只允許特定檔案類型
+        allowed_extensions = {'.txt', '.xml', '.json', '.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg'}
+        if any(filename.endswith(ext) for ext in allowed_extensions):
+            try:
+                return send_file(f'static/{filename}')
+            except FileNotFoundError:
+                abort(404)
+        abort(404)
 
     @app.before_request
     def block_options():
