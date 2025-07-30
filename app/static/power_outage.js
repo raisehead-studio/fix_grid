@@ -6,6 +6,14 @@ let isDeleteMode = false;          // 是否處於刪除模式
 let selectedItems = new Set();     // 選中的項目
 let currentDeleteId = null;        // 當前要刪除的項目 ID
 
+// 檢查是否超過24小時且未復電
+function isOver24HoursAndUnrestored(createdAt, reportStatus) {
+  const createdTime = new Date(createdAt.replace(" ", "T") + "Z");
+  const now = new Date();
+  const diffHours = (now - createdTime) / (1000 * 60 * 60);
+  return diffHours > 24 && !reportStatus; // 超過24小時且未復電
+}
+
 function cycleReportStatusFilter(event) {
   event.stopPropagation();  // 防止觸發排序
   const btn = document.getElementById('filterBtnReportStatus');
@@ -344,7 +352,7 @@ async function fetchReports() {
       <td>${entry.count}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td class="whitespace-nowrap">${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
+      <td class="whitespace-nowrap ${isOver24HoursAndUnrestored(entry.created_at, entry.report_status) ? 'text-red-600 font-semibold' : ''}">${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
       <td>
         ${entry.report_status 
           ? '<span class="text-green-600 whitespace-nowrap">已復電</span>' 
