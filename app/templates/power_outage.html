@@ -29,13 +29,20 @@
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="sticky top-[56px] z-40 bg-gray-100 p-4 flex justify-between items-center border-b">
-    <h2 class="text-xl font-bold">
-      {% if current_user.role_id == 4 %}
-        停電通報
-      {% else %}
-        停電彙整
-      {% endif %}
-    </h2>
+    <div class="flex items-center gap-4">
+      <h2 class="text-xl font-bold">
+        {% if current_user.role_id == 4 %}
+          停電通報
+        {% else %}
+          停電彙整
+        {% endif %}
+      </h2>
+      <a href="https://service.taipower.com.tw/psvs1/#" 
+         target="_blank" 
+         class="text-blue-600 hover:text-blue-800 underline text-sm">
+        台電停電查詢官網
+      </a>
+    </div>
 
     <div class="flex gap-2">
       {% if 'excel' in user_permissions %}

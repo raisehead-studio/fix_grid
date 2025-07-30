@@ -23,13 +23,20 @@
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="sticky top-[56px] z-40 bg-gray-100 p-4 flex justify-between items-center border-b">
-    <h2 class="text-xl font-bold">
-      {% if current_user.role_id == 4 %}
-        停水通報
-      {% else %}
-        停水彙整
-      {% endif %}
-    </h2>
+    <div class="flex items-center gap-4">
+      <h2 class="text-xl font-bold">
+        {% if current_user.role_id == 4 %}
+          停水通報
+        {% else %}
+          停水彙整
+        {% endif %}
+      </h2>
+      <a href="https://web.water.gov.tw/wateroff/city/%E9%AB%98%E9%9B%84%E5%B8%82/index.html" 
+         target="_blank" 
+         class="text-blue-600 hover:text-blue-800 underline text-sm">
+        台水停水查詢官網
+      </a>
+    </div>
 
     <div class="flex gap-2">
       {% if 'excel' in user_permissions %}
