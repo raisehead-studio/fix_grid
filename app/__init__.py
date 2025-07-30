@@ -61,9 +61,7 @@ def validate_password(pwd):
     return True
 
 def create_app():
-    app = Flask(__name__, 
-                static_folder='static',
-                static_url_path='/static')
+    app = Flask(__name__)  # 移除內建靜態檔案服務
     app.secret_key = 'supersecretkey'
 
     login_manager.init_app(app)
@@ -79,22 +77,59 @@ def create_app():
     @app.route('/.well-known/<path:filename>')
     def dns_verification(filename):
         """處理 DNS 驗證檔案，例如 /.well-known/acme-challenge/xxx"""
+        # 安全性檢查：防止路徑遍歷攻擊
+        if '..' in filename or filename.startswith('/'):
+            abort(404)
+        
+        # 只允許特定副檔名
+        allowed_extensions = {'.txt', '.html', '.htm', '.json'}
+        if not any(filename.endswith(ext) for ext in allowed_extensions):
+            abort(404)
+            
         try:
             return send_file(f'static/.well-known/{filename}')
         except FileNotFoundError:
             abort(404)
-    
-    @app.route('/<path:filename>')
-    def public_files(filename):
-        """處理其他公開檔案，例如 /robots.txt, /sitemap.xml 等"""
-        # 只允許特定檔案類型
-        allowed_extensions = {'.txt', '.xml', '.json', '.html', '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg'}
-        if any(filename.endswith(ext) for ext in allowed_extensions):
-            try:
-                return send_file(f'static/{filename}')
-            except FileNotFoundError:
-                abort(404)
-        abort(404)
+
+    # @app.route('/static/<path:filename>')
+    # @login_required
+    # def static_files(filename):
+    #     """處理靜態檔案，需要登入驗證"""
+    #     # 安全性檢查：防止路徑遍歷攻擊
+    #     if '..' in filename or filename.startswith('/'):
+    #         abort(404)
+
+    #     # 只允許特定檔案類型（不包含 Excel 檔案）
+    #     allowed_extensions = {'.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg'}
+    #     if not any(filename.endswith(ext) for ext in allowed_extensions):
+    #         abort(404)
+
+    #     try:
+    #         return send_file(f'static/{filename}')
+    #     except FileNotFoundError:
+    #         abort(404)
+
+    # @app.route('/<path:filename>')
+    # def public_files(filename):
+    #     """處理其他公開檔案，例如 /robots.txt, /sitemap.xml 等"""
+    #     # 安全性檢查：防止路徑遍歷攻擊
+    #     if '..' in filename or filename.startswith('/') or filename.startswith('static/'):
+    #         abort(404)
+        
+    #     # 只允許特定檔案類型
+    #     allowed_extensions = {'.txt', '.xml', '.json', '.html'}
+    #     if not any(filename.endswith(ext) for ext in allowed_extensions):
+    #         abort(404)
+            
+    #     # 只允許特定檔案名稱（白名單）
+    #     allowed_files = {'robots.txt', 'sitemap.xml', 'favicon.ico'}
+    #     if not any(filename == allowed_file for allowed_file in allowed_files):
+    #         abort(404)
+            
+    #     try:
+    #         return send_file(f'static/{filename}')
+    #     except FileNotFoundError:
+    #         abort(404)
 
     @app.before_request
     def block_options():
