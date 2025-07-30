@@ -8,7 +8,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from jinja2 import TemplateNotFound
 from werkzeug.security import check_password_hash, generate_password_hash
 from .models import get_user_by_username, get_user_by_id_with_role, get_role_page_permissions_from_db
-from .utils import page_name_map
+from .utils import page_name_map, check_page_view_permission
 from io import BytesIO
 from openpyxl import load_workbook
 
@@ -63,6 +63,13 @@ def validate_password(pwd):
 def create_app():
     app = Flask(__name__)  # 移除內建靜態檔案服務
     app.secret_key = 'supersecretkey'
+    
+    # 設定會話過期時間（例如：8小時）
+    from datetime import timedelta
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=8)
+    
+    # 設定會話為永久性（但會在指定時間後過期）
+    app.config['SESSION_PERMANENT'] = True
 
     login_manager.init_app(app)
     login_manager.login_view = 'login'
@@ -178,6 +185,10 @@ def create_app():
 
     @app.route('/', methods=['GET', 'POST'])
     def login():
+        # 如果用戶已經登入，自動跳轉到 profile 頁面
+        if current_user.is_authenticated:
+            return redirect(url_for('page_info', page='profile'))
+
         if request.method == 'POST':
             username = request.form['username']
             password = request.form['password']
@@ -188,7 +199,7 @@ def create_app():
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
                     user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], user['password_updated_at'], ip=ip
-                ))
+                ), remember=True)
 
                 if needs_password_update(user['password_updated_at'], user['id']):
                     print('change')
@@ -293,8 +304,14 @@ def create_app():
     @app.route('/page/<page>')
     @login_required
     def page_info(page):
+        # 權限檢查
         all_permissions = get_role_page_permissions_from_db()
         role_name = current_user.role_name
+        
+        # 檢查頁面查看權限（需要 view 權限）
+        if not check_page_view_permission(page, role_name, all_permissions):
+            abort(403)  # 權限不足
+        
         role_pages = all_permissions.get(role_name, {})
         actions = role_pages.get(page, [])
 
