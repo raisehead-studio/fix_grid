@@ -37,6 +37,7 @@ def get_taiwater_power_reports():
             taipower_support=row[17],
             created_at=row[8],
             location=row[18],
+            report_updated_time=row[19],  # 新增 report_updated_time
         ) for row in rows]
         return jsonify(data)
     except Exception as e:
@@ -80,7 +81,8 @@ def update_taiwater_power_outage_report(id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE taiwater_power_reports
-            SET facility = ?, location = ?, pole_number = ?, electricity_number = ?, reason = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
+            SET facility = ?, location = ?, pole_number = ?, electricity_number = ?, reason = ?, 
+                contact_name = ?, contact_phone = ?, updated_at = current_timestamp, report_updated_time = current_timestamp
             WHERE id = ? AND report_status = 0
         """, (
             data["facility"],
@@ -107,7 +109,7 @@ def toggle_report_status(id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE taiwater_power_reports
-            SET report_status = 1, report_restored_at = current_timestamp
+            SET report_status = 1, report_restored_at = current_timestamp, report_updated_time = current_timestamp
             WHERE id = ? AND report_status = 0
         """, (id,))
         conn.commit()
@@ -184,7 +186,7 @@ def batch_delete_taiwater_power_reports():
         placeholders = ','.join(['?' for _ in ids])
         cursor.execute(f"""
             UPDATE taiwater_power_reports 
-            SET deleted_at = datetime('now') 
+            SET deleted_at = current_timestamp 
             WHERE id IN ({placeholders}) AND deleted_at IS NULL
         """, ids)
         

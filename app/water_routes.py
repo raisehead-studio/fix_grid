@@ -51,7 +51,8 @@ def get_water_reports():
             taiwater_support=row[18],
             taiwater_restored_at=row[14],
             created_at=row[8],
-            remarks=row[19]
+            remarks=row[19],
+            report_updated_time=row[20]  # 新增 report_updated_time
         ) for row in rows]
         return jsonify(data)
     except Exception as e:
@@ -95,7 +96,8 @@ def update_water_outage_report(id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE water_reports
-            SET location = ?, water_station = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now'), remarks = ?
+            SET location = ?, water_station = ?, contact_name = ?, contact_phone = ?, 
+                updated_at = current_timestamp, report_updated_time = current_timestamp, remarks = ?
             WHERE id = ? AND report_status = 0
         """, (
             data['location'],
@@ -120,7 +122,7 @@ def toggle_report_status(id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE water_reports
-            SET report_status = 1, report_restored_at = current_timestamp
+            SET report_status = 1, report_restored_at = current_timestamp, report_updated_time = current_timestamp
             WHERE id = ? AND report_status = 0
         """, (id,))
         conn.commit()
@@ -201,7 +203,7 @@ def batch_delete_water_reports():
         placeholders = ','.join(['?' for _ in ids])
         cursor.execute(f"""
             UPDATE water_reports 
-            SET deleted_at = datetime('now') 
+            SET deleted_at = current_timestamp 
             WHERE id IN ({placeholders}) AND deleted_at IS NULL
         """, ids)
         

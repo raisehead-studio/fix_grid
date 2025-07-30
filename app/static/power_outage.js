@@ -352,7 +352,10 @@ async function fetchReports() {
       <td>${entry.count}</td>
       <td>${entry.contact}</td>
       <td>${entry.phone}</td>
-      <td class="whitespace-nowrap ${isOver24HoursAndUnrestored(entry.created_at, entry.report_status) ? 'text-red-600 font-semibold' : ''}">${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}</td>
+      <td class="whitespace-nowrap ${isOver24HoursAndUnrestored(entry.created_at, entry.report_status) ? 'text-red-600 font-semibold' : ''}" 
+          title="${'通報時間: ' + new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }) + (entry.report_restored_at ? '\n復電時間: ' + new Date(entry.report_restored_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }) : '') + (entry.report_updated_time ? '\n更新時間: ' + new Date(entry.report_updated_time.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" }) : '')}">
+        ${new Date(entry.created_at.replace(" ", "T") + "Z").toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })}
+      </td>
       <td>
         ${entry.report_status 
           ? '<span class="text-green-600 whitespace-nowrap">已復電</span>' 
@@ -443,6 +446,7 @@ function exportToExcel() {
       e.contact,
       e.phone,
       e.created_at,
+      e.report_updated_time,
       e.report_status ? "是" : "否",
       canViewStatus && e.taipower_status != null
         ? (e.taipower_status ? "已復電" : "搶修中")

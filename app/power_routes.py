@@ -59,7 +59,8 @@ def get_power_reports():
             taipower_eta_hours=row[18],
             taipower_support=row[19],
             taipower_restored_at=row[16],
-            created_at=row[10]
+            created_at=row[10],
+            report_updated_time=row[20]  # 新增 report_updated_time
         ) for row in rows]
         return jsonify(data)
     except Exception as e:
@@ -110,7 +111,8 @@ def update_power_outage_report(id):
             cursor.execute("""
                 UPDATE power_reports
                 SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, 
-                    report_status = 1, report_restored_at = current_timestamp, updated_at = datetime('now')
+                    report_status = 1, report_restored_at = current_timestamp, updated_at = current_timestamp,
+                    report_updated_time = current_timestamp
                 WHERE id = ? AND report_status = 0
             """, (
                 data['location'],
@@ -123,7 +125,8 @@ def update_power_outage_report(id):
         else:
             cursor.execute("""
                 UPDATE power_reports
-                SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, updated_at = datetime('now')
+                SET location = ?, reason = ?, count = ?, contact_name = ?, contact_phone = ?, 
+                    updated_at = current_timestamp, report_updated_time = current_timestamp
                 WHERE id = ? AND report_status = 0
             """, (
                 data['location'],
@@ -178,7 +181,7 @@ def toggle_report_status(id):
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE power_reports
-            SET report_status = 1, report_restored_at = current_timestamp
+            SET report_status = 1, report_restored_at = current_timestamp, report_updated_time = current_timestamp
             WHERE id = ? AND report_status = 0
         """, (id,))
         conn.commit()

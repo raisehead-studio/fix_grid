@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 資料庫更新腳本
-用於更新 power_reports 表格的 count 欄位約束，允許 count 為 0
+用於更新三張表格的結構，包含 report_updated_time 欄位
+同時更新 power_reports 的 count 欄位約束和 original_count 欄位
 """
 
 import sqlite3
@@ -43,21 +44,52 @@ def execute_sql_script(script_path):
         conn.commit()
         
         # 驗證更新
+        print("🔍 驗證表格結構...")
+        
+        # 檢查 power_reports 表格
         cursor.execute("PRAGMA table_info(power_reports)")
-        columns = cursor.fetchall()
+        power_columns = cursor.fetchall()
+        power_column_names = [col[1] for col in power_columns]
         
-        # 找到 count 欄位
-        count_column = None
-        for col in columns:
-            if col[1] == 'count':
-                count_column = col
-                break
+        # 檢查 water_reports 表格
+        cursor.execute("PRAGMA table_info(water_reports)")
+        water_columns = cursor.fetchall()
+        water_column_names = [col[1] for col in water_columns]
         
-        if count_column:
-            print(f"✅ count 欄位約束已更新: {count_column[2]}")
+        # 檢查 taiwater_power_reports 表格
+        cursor.execute("PRAGMA table_info(taiwater_power_reports)")
+        taiwater_columns = cursor.fetchall()
+        taiwater_column_names = [col[1] for col in taiwater_columns]
+        
+        # 驗證結果
+        success = True
+        
+        if 'report_updated_time' in power_column_names:
+            print("✅ power_reports 表格已新增 report_updated_time 欄位")
+        else:
+            print("❌ power_reports 表格缺少 report_updated_time 欄位")
+            success = False
+            
+        if 'original_count' in power_column_names:
+            print("✅ power_reports 表格已新增 original_count 欄位")
+        else:
+            print("❌ power_reports 表格缺少 original_count 欄位")
+            success = False
+            
+        if 'report_updated_time' in water_column_names:
+            print("✅ water_reports 表格已新增 report_updated_time 欄位")
+        else:
+            print("❌ water_reports 表格缺少 report_updated_time 欄位")
+            success = False
+            
+        if 'report_updated_time' in taiwater_column_names:
+            print("✅ taiwater_power_reports 表格已新增 report_updated_time 欄位")
+        else:
+            print("❌ taiwater_power_reports 表格缺少 report_updated_time 欄位")
+            success = False
         
         conn.close()
-        return True
+        return success
         
     except Exception as e:
         print(f"❌ 執行 SQL 腳本時發生錯誤: {e}")
@@ -68,6 +100,12 @@ def execute_sql_script(script_path):
 def main():
     """主函數"""
     print("🚀 開始更新資料庫...")
+    print("=" * 50)
+    print("📝 本次更新內容：")
+    print("   • power_reports: 新增 original_count 和 report_updated_time 欄位")
+    print("   • water_reports: 新增 report_updated_time 欄位")
+    print("   • taiwater_power_reports: 新增 report_updated_time 欄位")
+    print("   • power_reports: count 欄位允許 0 值")
     print("=" * 50)
     
     # 檢查 SQL 腳本是否存在
@@ -86,7 +124,10 @@ def main():
         print("✅ 資料庫更新成功！")
         print(f"📁 備份檔案: {backup_file}")
         print("=" * 50)
-        print("💡 現在停電戶數可以設為 0，系統會自動將狀態改為已復電")
+        print("💡 更新完成，現在系統支援：")
+        print("   • 停電戶數可以設為 0，系統會自動將狀態改為已復電")
+        print("   • 所有通報都有 report_updated_time 欄位記錄最後編輯時間")
+        print("   • power_reports 有 original_count 欄位記錄原始戶數")
     else:
         print("❌ 資料庫更新失敗！")
         print(f"📁 備份檔案: {backup_file}")
