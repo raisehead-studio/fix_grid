@@ -5,3 +5,4 @@ __pycache__
 .DS_Store
 uploads
 libs/
+backup_db/
