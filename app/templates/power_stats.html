@@ -25,7 +25,12 @@
 <body class="bg-gray-100">
   {% include 'navigation.html' %}
   <div class="p-4 flex justify-between items-center">
-    <h2 class="text-xl font-bold">停電彙整表</h2>
+    <h2 class="text-2xl font-bold">停電彙整表</h2>
+    <a href="https://service.taipower.com.tw/psvs1/#" 
+        target="_blank" 
+        class="text-green-600 hover:text-green-800 underline text-2xl ml-4">
+      台電停電查詢官網
+    </a>
     <div class="space-x-2">
       <button onclick="showTaipowerModal()" class="px-4 py-2 bg-green-600 text-white rounded">台電官網資料登載</button>
       <button onclick="exportToExcel()" class="px-4 py-2 bg-gray-500 text-white rounded">匯出 Excel</button>
