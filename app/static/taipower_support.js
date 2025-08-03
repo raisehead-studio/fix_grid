@@ -2,21 +2,7 @@ let sortField = '';
 let sortOrder = 'asc';
 let filteredReports = [];
 
-function syncRowHeights(leftSelector, rightSelector) {
-  const leftRows = document.querySelectorAll(leftSelector);
-  const rightRows = document.querySelectorAll(rightSelector);
 
-  const rowCount = Math.min(leftRows.length, rightRows.length);
-
-  for (let i = 0; i < rowCount; i++) {
-    const leftHeight = leftRows[i].getBoundingClientRect().height;
-    const rightHeight = rightRows[i].getBoundingClientRect().height;
-    const maxHeight = Math.max(leftHeight, rightHeight);
-
-    leftRows[i].style.height = `${maxHeight}px`;
-    rightRows[i].style.height = `${maxHeight}px`;
-  }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchReports();
@@ -43,6 +29,9 @@ async function fetchReports() {
     data = data.filter(e => e.village_id == selectedVillage);
   }
 
+  // 只顯示 report_status 為 0 的資料（未處理的回報）
+  data = data.filter(e => e.report_status === 0);
+
   // 排序處理
   if (sortField) {
     data.sort((a, b) => {
@@ -65,7 +54,6 @@ async function fetchReports() {
   taipowerBody.innerHTML = '';
 
   data.forEach((entry, index) => {
-    if (entry.taipower_status === 1) return;
     power_data[entry.id] = entry
     // 左表格：回報
     const reportRow = document.createElement('tr');
@@ -102,13 +90,16 @@ async function fetchReports() {
 
   setTimeout(() => {
     requestAnimationFrame(() => {
-      syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
+      // 同步表體高度
+      syncRowHeightsDelayed("#report-table-body tr", "#taipower-table-body tr");
+      // 同步表頭高度
+      syncTheadHeightsDelayed(".col-span-3 table thead", ".col-span-2 table thead");
     });
   }, 0);
 }
 
 function exportToExcel() {
-  const exportData = filteredReports.filter(e => e.taipower_status !== 1);
+  const exportData = filteredReports; // 已經篩選過 report_status 為 0 的資料
   if (exportData.length === 0) {
     alert("目前沒有可匯出的資料！");
     return;

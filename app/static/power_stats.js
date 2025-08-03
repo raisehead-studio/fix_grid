@@ -24,21 +24,7 @@ function switchMode(newMode) {
   }
 }
 
-function syncRowHeights(leftSelector, rightSelector) {
-  const leftRows = document.querySelectorAll(leftSelector);
-  const rightRows = document.querySelectorAll(rightSelector);
 
-  const rowCount = Math.min(leftRows.length, rightRows.length);
-
-  for (let i = 0; i < rowCount; i++) {
-    const leftHeight = leftRows[i].getBoundingClientRect().height;
-    const rightHeight = rightRows[i].getBoundingClientRect().height;
-    const maxHeight = Math.max(leftHeight, rightHeight);
-
-    leftRows[i].style.height = `${maxHeight}px`;
-    rightRows[i].style.height = `${maxHeight}px`;
-  }
-}
 
 function renderData() {
   if (mode === 'village') renderByVillage();
@@ -179,7 +165,10 @@ function renderByDistrict() {
 
   setTimeout(() => {
     requestAnimationFrame(() => {
-      syncRowHeights("#left-table-body tr", "#right-table-body tr");
+      // 同步表體高度
+      syncRowHeightsDelayed("#left-table-body tr", "#right-table-body tr");
+      // 同步表頭高度
+      syncTheadHeightsDelayed("#left-table-head", "#right-table-head");
     });
   }, 0);
 

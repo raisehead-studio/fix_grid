@@ -2,21 +2,7 @@ let sortField = '';
 let sortOrder = 'asc';
 let filteredReports = [];
 
-function syncRowHeights(leftSelector, rightSelector) {
-  const leftRows = document.querySelectorAll(leftSelector);
-  const rightRows = document.querySelectorAll(rightSelector);
 
-  const rowCount = Math.min(leftRows.length, rightRows.length);
-
-  for (let i = 0; i < rowCount; i++) {
-    const leftHeight = leftRows[i].getBoundingClientRect().height;
-    const rightHeight = rightRows[i].getBoundingClientRect().height;
-    const maxHeight = Math.max(leftHeight, rightHeight);
-
-    leftRows[i].style.height = `${maxHeight}px`;
-    rightRows[i].style.height = `${maxHeight}px`;
-  }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchReports();
@@ -95,7 +81,7 @@ async function fetchReports() {
 
   setTimeout(() => {
     requestAnimationFrame(() => {
-      syncRowHeights("#report-table-body tr", "#taipower-table-body tr");
+      syncRowHeightsDelayed("#report-table-body tr", "#taipower-table-body tr");
     });
   }, 0);
 }
