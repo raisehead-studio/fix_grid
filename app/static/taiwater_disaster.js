@@ -19,10 +19,14 @@ function loadHistoryList() {
 
       select.addEventListener("change", () => {
         selectedId = select.value;
+        const deleteBtn = document.getElementById("delete-btn");
+        
         if (selectedId) {
           loadExcelData(selectedId);
+          deleteBtn.classList.remove("hidden");
         } else {
           document.querySelector("#excel-table tbody").innerHTML = "";
+          deleteBtn.classList.add("hidden");
         }
       });
     });
@@ -229,5 +233,59 @@ function renderExcelData(jsonData) {
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
+}
+
+// 刪除相關函數
+function openDeleteModal() {
+  if (!selectedId) {
+    alert("請先選擇歷史資料");
+    return;
+  }
+  
+  const select = document.getElementById("history-select");
+  const selectedOption = select.options[select.selectedIndex];
+  const itemName = selectedOption.textContent;
+  
+  document.getElementById("delete-item-name").textContent = itemName;
+  document.getElementById("delete-modal").classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+  document.getElementById("delete-modal").classList.add("hidden");
+}
+
+function confirmDelete() {
+  if (!selectedId) return;
+  
+  fetch(`/api/taiwater_disasters/${selectedId}`, {
+    method: "DELETE",
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        closeDeleteModal();
+        
+        // 重新載入歷史清單
+        loadHistoryList();
+        
+        // 清空表格
+        document.querySelector("#excel-table tbody").innerHTML = "";
+        
+        // 隱藏刪除按鈕
+        document.getElementById("delete-btn").classList.add("hidden");
+        
+        // 重置選擇
+        selectedId = null;
+        document.getElementById("history-select").value = "";
+        
+        alert("刪除成功");
+      } else {
+        alert("刪除失敗：" + (data.message || "未知錯誤"));
+      }
+    })
+    .catch(error => {
+      console.error("刪除錯誤:", error);
+      alert("刪除失敗：" + error.message);
+    });
 }
 

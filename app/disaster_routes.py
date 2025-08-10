@@ -100,3 +100,39 @@ def download_excel(disaster_id):
 def download_example():
     file_path = os.path.join(current_app.root_path, "static", "sheet7.xlsx")
     return send_file(file_path, as_attachment=True)
+
+@disaster_bp.route("/api/taiwater_disasters/<int:disaster_id>", methods=["DELETE"])
+@login_required
+def delete_disaster(disaster_id):
+    try:
+        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        cursor = conn.cursor()
+        
+        # 先查詢檔案路徑
+        cursor.execute("SELECT file_path FROM taiwater_disasters WHERE id = ?", (disaster_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            return jsonify(success=False, message="找不到指定的災害資料"), 404
+        
+        file_path = row[0]
+        
+        # 刪除資料庫記錄
+        cursor.execute("DELETE FROM taiwater_disasters WHERE id = ?", (disaster_id,))
+        conn.commit()
+        
+        # 如果存在檔案，則刪除檔案
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except OSError as e:
+                # 檔案刪除失敗，記錄錯誤但不影響資料庫刪除
+                current_app.logger.warning(f"無法刪除檔案 {file_path}: {e}")
+        
+        return jsonify(success=True)
+        
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
