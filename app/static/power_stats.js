@@ -262,7 +262,8 @@ function exportToExcel() {
   // ✅ 排序邏輯：依左右表中較大者為準
   rows.sort((a, b) => Math.max(b.govCount, b.tpCount) - Math.max(a.govCount, a.tpCount));
 
-  const dataRows = rows.map(row => [
+  const dataRows = rows.map((row, index) => [
+    index + 1,
     row.district,
     row.mergedVillages,
     row.govCount,
@@ -286,7 +287,7 @@ function exportToExcel() {
       filename,
       data: dataRows,
       start_row: 5,
-      start_col: 2
+      start_col: 1
     })
   })
     .then(res => {

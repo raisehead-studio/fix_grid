@@ -360,6 +360,7 @@ function exportToExcel() {
     const isOver24h = eta != null && eta > 24;
 
     return [
+      e.id,
       e.facility,
       e.location,
       e.pole_number,
@@ -390,7 +391,7 @@ function exportToExcel() {
       filename,
       data: dataRows,
       start_row: 5,   // 從第 5 列開始
-      start_col: 2    // 從 B 欄開始
+      start_col: 1    // 從 A 欄開始
     })
   })
     .then(res => {

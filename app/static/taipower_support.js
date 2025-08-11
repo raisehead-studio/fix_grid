@@ -110,6 +110,7 @@ function exportToExcel() {
     const isOver24h = eta != null && eta > 24;
 
     return [
+      e.id,
       e.district,
       e.village,
       e.location,
@@ -136,7 +137,7 @@ function exportToExcel() {
       filename,
       data: dataRows,
       start_row: 5,
-      start_col: 2
+      start_col: 1
     })
   })
     .then(res => {
