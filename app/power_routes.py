@@ -496,7 +496,7 @@ def create_taipower_report():
 @power_bp.route("/api/taipower_reports/delete_by_village", methods=["POST"])
 @login_required
 def delete_taipower_reports_by_village():
-    if current_user.role_id not in [1, 2, 3]:
+    if current_user.role_id not in [1, 2, 3, 7]:
         return jsonify({"error": "權限不足"}), 403
     
     data = request.get_json()
@@ -523,7 +523,7 @@ def delete_taipower_reports_by_village():
 @power_bp.route("/api/taipower_reports/delete_by_district", methods=["POST"])
 @login_required
 def delete_taipower_reports_by_district():
-    if current_user.role_id not in [1, 2, 3]:
+    if current_user.role_id not in [1, 2, 3, 7]:
         return jsonify({"error": "權限不足"}), 403
     
     data = request.get_json()
