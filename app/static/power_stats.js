@@ -89,22 +89,24 @@ function renderByDistrict() {
   const rightTableHead = document.getElementById('right-table-head');
 
   leftTableHead.innerHTML = `<tr><th class="w-[6ch]">行政區</th><th>里</th><th class="w-[8ch]">停電戶數</th></tr>`;
-  rightTableHead.innerHTML = `<tr><th>里</th><th class="w-[8ch]">台電戶數</th></tr>`;
+  rightTableHead.innerHTML = `<tr><th>里</th><th class="w-[8ch]">台電戶數</th><th class="w-[6ch]">操作</th></tr>`;
   tableLeft.innerHTML = '';
   tableRight.innerHTML = '';
 
-  const govMap = new Map(); // Map<區名, { count, Set<里> }>
-  const tpMap = new Map();  // Map<區名, { count, Set<里> }>
+  const govMap = new Map(); // Map<區名, { count, Set<里>, district_id }>
+  const tpMap = new Map();  // Map<區名, { count, Set<里>, district_id, villages_data }>
 
   power_data.forEach(row => {
     const district = row.district;
     const village = row.village;
+    const district_id = row.district_id;
+    const village_id = row.village_id;
     const gov = row.gov_count || 0;
     const tp = row.tp_count || 0;
 
     if (gov > 0) {
       if (!govMap.has(district)) {
-        govMap.set(district, { count: 0, villages: new Set() });
+        govMap.set(district, { count: 0, villages: new Set(), district_id: district_id });
       }
       govMap.get(district).count += gov;
       govMap.get(district).villages.add(village);
@@ -112,10 +114,20 @@ function renderByDistrict() {
 
     if (tp > 0) {
       if (!tpMap.has(district)) {
-        tpMap.set(district, { count: 0, villages: new Set() });
+        tpMap.set(district, { 
+          count: 0, 
+          villages: new Set(), 
+          district_id: district_id,
+          villages_data: new Map() // 存儲每個里的詳細信息
+        });
       }
       tpMap.get(district).count += tp;
       tpMap.get(district).villages.add(village);
+      // 存儲每個里的信息，包括 village_id
+      if (!tpMap.get(district).villages_data.has(village)) {
+        tpMap.get(district).villages_data.set(village, { village_id: village_id, count: 0 });
+      }
+      tpMap.get(district).villages_data.get(village).count += tp;
     }
   });
 
@@ -135,10 +147,12 @@ function renderByDistrict() {
 
     rows.push({
       district,
+      district_id: tpData?.district_id || govData?.district_id,
       govCount,
       govVillages,
       tpCount,
-      tpVillages
+      tpVillages,
+      villages_data: tpData?.villages_data || new Map()
     });
   });
 
@@ -159,7 +173,18 @@ function renderByDistrict() {
 
     const trRight = document.createElement('tr');
     trRight.className = "border-t border-b";
-    trRight.innerHTML = `<td>${row.tpVillages}</td><td>${row.tpCount}</td>`;
+    
+    if (row.tpCount > 0) {
+      // 將里名稱變成可點擊的，點擊後刪除該里的台電資料
+      const villagesHtml = Array.from(row.villages_data.keys()).map(villageName => {
+        const villageData = row.villages_data.get(villageName);
+        return `<span class="cursor-pointer text-blue-600 hover:text-blue-800 underline" onclick="showDeleteConfirmModal('village', '${villageData.village_id}', '${villageName}')">${villageName}</span>`;
+      }).join('、');
+      
+      trRight.innerHTML = `<td>${villagesHtml}</td><td>${row.tpCount}</td><td><button class="text-red-600 hover:text-red-800 text-lg" onclick="showDeleteConfirmModal('district', '${row.district_id}', '${row.district}')">❌</button></td>`;
+    } else {
+      trRight.innerHTML = `<td>${row.tpVillages}</td><td>${row.tpCount}</td><td></td>`;
+    }
     tableRight.appendChild(trRight);
   });
 
@@ -365,4 +390,68 @@ async function submitTaipowerReport() {
   });
   hideTaipowerModal();
   location.reload();
+}
+
+// 刪除相關功能
+let deleteType = ''; // 'village' 或 'district'
+let deleteTargetId = null;
+let deleteTargetName = '';
+
+// 顯示刪除確認 Modal
+function showDeleteConfirmModal(type, targetId, targetName) {
+  deleteType = type;
+  deleteTargetId = targetId;
+  deleteTargetName = targetName;
+  
+  let message = '';
+  if (type === 'village') {
+    message = `確定要刪除「${targetName}」的所有台電官網資料嗎？此操作無法復原。`;
+  } else if (type === 'district') {
+    message = `確定要刪除「${targetName}」的所有台電官網資料嗎？此操作無法復原。`;
+  }
+  
+  document.getElementById('deleteConfirmMessage').textContent = message;
+  document.getElementById('deleteConfirmModal').classList.remove('hidden');
+}
+
+// 隱藏刪除確認 Modal
+function hideDeleteConfirmModal() {
+  document.getElementById('deleteConfirmModal').classList.add('hidden');
+  deleteType = '';
+  deleteTargetId = null;
+  deleteTargetName = '';
+}
+
+// 確認刪除操作
+async function confirmDelete() {
+  try {
+    let url = '';
+    let payload = {};
+    
+    if (deleteType === 'village') {
+      url = '/api/taipower_reports/delete_by_village';
+      payload = { village_id: deleteTargetId };
+    } else if (deleteType === 'district') {
+      url = '/api/taipower_reports/delete_by_district';
+      payload = { district_id: deleteTargetId };
+    }
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      alert(`刪除成功！共刪除 ${result.deleted_count} 筆資料。`);
+      hideDeleteConfirmModal();
+      location.reload(); // 重新載入頁面
+    } else {
+      const error = await response.json();
+      throw new Error(error.error || '刪除失敗');
+    }
+  } catch (error) {
+    alert('刪除失敗：' + error.message);
+  }
 }

@@ -492,3 +492,57 @@ def create_taipower_report():
     finally:
         if 'conn' in locals():
             conn.close()
+
+@power_bp.route("/api/taipower_reports/delete_by_village", methods=["POST"])
+@login_required
+def delete_taipower_reports_by_village():
+    if current_user.role_id not in [1, 2, 3]:
+        return jsonify({"error": "權限不足"}), 403
+    
+    data = request.get_json()
+    village_id = data.get("village_id")
+    
+    if not village_id:
+        return jsonify({"error": "Missing village_id"}), 400
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            DELETE FROM taipower_reports 
+            WHERE village_id = ?
+        """, (village_id,))
+        conn.commit()
+        return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+@power_bp.route("/api/taipower_reports/delete_by_district", methods=["POST"])
+@login_required
+def delete_taipower_reports_by_district():
+    if current_user.role_id not in [1, 2, 3]:
+        return jsonify({"error": "權限不足"}), 403
+    
+    data = request.get_json()
+    district_id = data.get("district_id")
+    
+    if not district_id:
+        return jsonify({"error": "Missing district_id"}), 400
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            DELETE FROM taipower_reports 
+            WHERE district_id = ?
+        """, (district_id,))
+        conn.commit()
+        return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
