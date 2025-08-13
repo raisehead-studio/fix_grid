@@ -28,9 +28,24 @@ def list_disasters():
 def create_disaster():
     name = request.form.get("name")
     created_at = datetime.now().isoformat()
+    
+    if not name or not name.strip():
+        return jsonify(success=False, message="名稱不能為空"), 400
+    
+    name = name.strip()
+    
     try:
         conn = sqlite3.connect("kao_power_water.db", timeout=10)
         cursor = conn.cursor()
+        
+        # 檢查是否有同名
+        cursor.execute("SELECT id FROM taiwater_disasters WHERE name = ?", (name,))
+        existing = cursor.fetchone()
+        
+        if existing:
+            return jsonify(success=False, message=f"已存在同名資料：{name}"), 409
+        
+        # 沒有同名，執行插入
         cursor.execute("INSERT INTO taiwater_disasters (name, created_at) VALUES (?, ?)", (name, created_at))
         conn.commit()
         return jsonify(success=True)

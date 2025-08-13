@@ -51,6 +51,8 @@ function loadExcelData(disasterId) {
 // 新增 modal 操作
 function openNewModal() {
   document.getElementById("new-modal").classList.remove("hidden");
+  // 清空表單
+  document.querySelector("#new-modal form").reset();
 }
 
 function closeNewModal() {
@@ -66,28 +68,39 @@ function submitNew(e) {
     method: "POST",
     body: formData,
   })
-    .then(() => {
-      closeNewModal();
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        closeNewModal();
+        form.reset(); // 清空表單
 
-      // 重新載入歷史清單
-      fetch("/api/taiwater_disasters")
-        .then(res => res.json())
-        .then(data => {
-          const select = document.getElementById("history-select");
-          select.innerHTML = `<option value="">請選擇...</option>`;
-          data.forEach(item => {
-            const opt = document.createElement("option");
-            opt.value = item.id;
-            opt.textContent = item.name;
-            select.appendChild(opt);
+        // 重新載入歷史清單
+        fetch("/api/taiwater_disasters")
+          .then(res => res.json())
+          .then(data => {
+            const select = document.getElementById("history-select");
+            select.innerHTML = `<option value="">請選擇...</option>`;
+            data.forEach(item => {
+              const opt = document.createElement("option");
+              opt.value = item.id;
+              opt.textContent = item.name;
+              select.appendChild(opt);
+            });
+
+            if (data.length > 0) {
+              selectedId = data[0].id;
+              select.value = selectedId;
+              setTimeout(() => openUploadModal(), 300);
+            }
           });
-
-          if (data.length > 0) {
-            selectedId = data[0].id;
-            select.value = selectedId;
-            setTimeout(() => openUploadModal(), 300);
-          }
-        });
+      } else {
+        // 顯示錯誤訊息
+        alert("新增失敗：" + (data.message || "未知錯誤"));
+      }
+    })
+    .catch(error => {
+      console.error("新增錯誤:", error);
+      alert("新增失敗：" + error.message);
     });
 }
 
