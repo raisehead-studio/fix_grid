@@ -300,8 +300,11 @@ function exportToExcel() {
     return;
   }
 
+  // 使用 +8 時區
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const taipei = new Date(utc + (8 * 3600000));
+  const timestamp = taipei.toISOString().replace(/[:T]/g, '-').split('.')[0];
   const filename = `(表五)停電彙整表(報告上級)_${timestamp}.xlsx`;
 
   fetch("/api/export-excel", {
@@ -344,8 +347,11 @@ function exportToExcelViaBackend() {
   })
   .then(response => response.blob())
   .then(blob => {
+    // 使用 +8 時區
     const now = new Date();
-    const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const taipei = new Date(utc + (8 * 3600000));
+    const timestamp = taipei.toISOString().replace(/[:T]/g, '-').split('.')[0];
     const filename = `停電統計_${timestamp}.xlsx`;
 
     const link = document.createElement("a");

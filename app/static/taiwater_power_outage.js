@@ -379,8 +379,11 @@ function exportToExcel() {
     ];
   });
 
+  // 使用 +8 時區
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:T]/g, '-').split('.')[0];
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const taipei = new Date(utc + (8 * 3600000));
+  const timestamp = taipei.toISOString().replace(/[:T]/g, '-').split('.')[0];
   const filename = `(表三)水公司停電彙整表_${timestamp}.xlsx`;
 
   fetch("/api/export-excel", {

@@ -280,7 +280,10 @@ def export_power_report():
     wb.save(output)
     output.seek(0)
 
-    now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # 使用 +8 時區
+    from datetime import timezone, timedelta
+    tz = timezone(timedelta(hours=8))
+    now = datetime.now(tz).strftime("%Y-%m-%d_%H-%M-%S")
     filename = f"停電統計_{now}.xlsx"
 
     return send_file(

@@ -270,9 +270,6 @@ def create_app():
     @app.route("/api/login_logs/<int:user_id>")
     @login_required
     def get_login_logs_by_user(user_id):
-        if current_user.role_id != 1 and current_user.id != user_id:
-            return {"error": "Unauthorized access"}, 403
-
         try:
             conn = sqlite3.connect("kao_power_water.db", timeout=10)
             c = conn.cursor()
