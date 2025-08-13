@@ -526,9 +526,6 @@ def delete_taipower_reports_by_village():
             WHERE village_id = ?
         """, (village_id,))
         
-        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
-        cursor.execute("DELETE FROM taipower_reports WHERE deleted_at IS NOT NULL")
-        
         # 檢查資料庫是否為空，如果為空則重置 ID 計數器
         cursor.execute("SELECT COUNT(*) FROM taipower_reports")
         count = cursor.fetchone()[0]
@@ -562,9 +559,6 @@ def delete_taipower_reports_by_district():
             DELETE FROM taipower_reports 
             WHERE district_id = ?
         """, (district_id,))
-        
-        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
-        cursor.execute("DELETE FROM taipower_reports WHERE deleted_at IS NOT NULL")
         
         # 檢查資料庫是否為空，如果為空則重置 ID 計數器
         cursor.execute("SELECT COUNT(*) FROM taipower_reports")
