@@ -110,8 +110,7 @@ function exportToExcel() {
 
   // 使用 +8 時區
   const now = new Date();
-  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const taipei = new Date(utc + (8 * 3600000));
+  const taipei = new Date(now.getTime() + (8 * 60 * 60 * 1000));
   const timestamp = taipei.toISOString().replace(/[:T]/g, '-').split('.')[0];
   const filename = `(表六)停水彙整表(報告上級)_${timestamp}.xlsx`;
 

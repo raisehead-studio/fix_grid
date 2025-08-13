@@ -416,30 +416,32 @@ def get_power_stats():
 
         if current_user.role_id == 4:
             cursor.execute("""
-                SELECT po.*, d.name, v.name
+                SELECT po.district_id, po.village_id, d.name, v.name, SUM(po.count) as gov_count
                 FROM power_reports po
                 LEFT JOIN districts d ON po.district_id = d.id
                 LEFT JOIN villages v ON po.village_id = v.id
-                WHERE po.deleted_at IS NULL AND po.created_by = ?
+                WHERE po.deleted_at IS NULL AND po.created_by = ? AND po.report_status = 0
+                GROUP BY po.district_id, po.village_id
                 ORDER BY po.created_at
             """, (current_user.id,))
         else:
             cursor.execute("""
-                SELECT po.*, d.name, v.name
+                SELECT po.district_id, po.village_id, d.name, v.name, SUM(po.count) as gov_count
                 FROM power_reports po
                 LEFT JOIN districts d ON po.district_id = d.id
                 LEFT JOIN villages v ON po.village_id = v.id
-                WHERE po.deleted_at IS NULL
+                WHERE po.deleted_at IS NULL AND po.report_status = 0
+                GROUP BY po.district_id, po.village_id
                 ORDER BY po.created_at
             """)
         gov_rows = cursor.fetchall()
 
         gov_data = [dict(
-            district_id=row[1],
-            village_id=row[2],
-            district=row[-2],
-            village=row[-1],
-            gov_count=row[5]
+            district_id=row[0],
+            village_id=row[1],
+            district=row[2],
+            village=row[3],
+            gov_count=row[4]
         ) for row in gov_rows]
 
         cursor.execute("""
