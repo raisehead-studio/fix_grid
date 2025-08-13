@@ -448,7 +448,7 @@ async function confirmDelete() {
     
     if (response.ok) {
       const result = await response.json();
-      alert(`刪除成功！共刪除 ${result.deleted_count} 筆資料。`);
+      alert(`刪除成功！`);
       hideDeleteConfirmModal();
       location.reload(); // 重新載入頁面
     } else {
