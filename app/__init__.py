@@ -278,7 +278,7 @@ def create_app():
                 FROM user_login_logs
                 WHERE user_id = ?
                 ORDER BY login_time DESC
-                LIMIT 100
+                LIMIT 10
             """, (user_id,))
             logs = []
             for row in c.fetchall():
