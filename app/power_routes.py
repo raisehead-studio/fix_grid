@@ -157,13 +157,21 @@ def batch_delete_power_reports():
         conn = sqlite3.connect("kao_power_water.db", timeout=10)
         cursor = conn.cursor()
 
-        # 軟刪除：更新 deleted_at 欄位
+        # 硬刪除：直接刪除記錄
         placeholders = ','.join(['?' for _ in ids])
         cursor.execute(f"""
-            UPDATE power_reports 
-            SET deleted_at = datetime('now') 
-            WHERE id IN ({placeholders}) AND deleted_at IS NULL
+            DELETE FROM power_reports 
+            WHERE id IN ({placeholders})
         """, ids)
+        
+        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
+        cursor.execute("DELETE FROM power_reports WHERE deleted_at IS NOT NULL")
+        
+        # 檢查資料庫是否為空，如果為空則重置 ID 計數器
+        cursor.execute("SELECT COUNT(*) FROM power_reports")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name = 'power_reports'")
         
         conn.commit()
         return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
@@ -515,6 +523,16 @@ def delete_taipower_reports_by_village():
             DELETE FROM taipower_reports 
             WHERE village_id = ?
         """, (village_id,))
+        
+        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
+        cursor.execute("DELETE FROM taipower_reports WHERE deleted_at IS NOT NULL")
+        
+        # 檢查資料庫是否為空，如果為空則重置 ID 計數器
+        cursor.execute("SELECT COUNT(*) FROM taipower_reports")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name = 'taipower_reports'")
+        
         conn.commit()
         return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
     except Exception as e:
@@ -542,6 +560,16 @@ def delete_taipower_reports_by_district():
             DELETE FROM taipower_reports 
             WHERE district_id = ?
         """, (district_id,))
+        
+        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
+        cursor.execute("DELETE FROM taipower_reports WHERE deleted_at IS NOT NULL")
+        
+        # 檢查資料庫是否為空，如果為空則重置 ID 計數器
+        cursor.execute("SELECT COUNT(*) FROM taipower_reports")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name = 'taipower_reports'")
+        
         conn.commit()
         return jsonify({"status": "ok", "deleted_count": cursor.rowcount})
     except Exception as e:

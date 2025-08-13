@@ -199,13 +199,21 @@ def batch_delete_water_reports():
         conn = sqlite3.connect(DB, timeout=TIMEOUT)
         cursor = conn.cursor()
         
-        # 軟刪除：更新 deleted_at 欄位
+        # 硬刪除：直接刪除記錄
         placeholders = ','.join(['?' for _ in ids])
         cursor.execute(f"""
-            UPDATE water_reports 
-            SET deleted_at = current_timestamp 
-            WHERE id IN ({placeholders}) AND deleted_at IS NULL
+            DELETE FROM water_reports 
+            WHERE id IN ({placeholders})
         """, ids)
+        
+        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
+        cursor.execute("DELETE FROM water_reports WHERE deleted_at IS NOT NULL")
+        
+        # 檢查資料庫是否為空，如果為空則重置 ID 計數器
+        cursor.execute("SELECT COUNT(*) FROM water_reports")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name = 'water_reports'")
         
         conn.commit()
         return jsonify({"status": "ok", "deleted_count": cursor.rowcount})

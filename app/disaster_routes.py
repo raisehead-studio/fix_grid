@@ -134,6 +134,16 @@ def delete_disaster(disaster_id):
         
         # 刪除資料庫記錄
         cursor.execute("DELETE FROM taiwater_disasters WHERE id = ?", (disaster_id,))
+        
+        # 清空所有軟刪除的資料（deleted_at 不為 NULL 的記錄）
+        cursor.execute("DELETE FROM taiwater_disasters WHERE deleted_at IS NOT NULL")
+        
+        # 檢查資料庫是否為空，如果為空則重置 ID 計數器
+        cursor.execute("SELECT COUNT(*) FROM taiwater_disasters")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name = 'taiwater_disasters'")
+        
         conn.commit()
         
         # 如果存在檔案，則刪除檔案
