@@ -192,21 +192,38 @@ def profile():
 @account_bp.route('/api/reset_password/<int:user_id>', methods=['POST'])
 @login_required
 def reset_password(user_id):
-    if current_user.role_id != 1:  # 僅限超級管理員
-        return jsonify({"error": "Unauthorized"}), 403
+    # 檢查要修改的用戶是否為超級管理員
+    try:
+        conn = sqlite3.connect('kao_power_water.db', timeout=10)
+        c = conn.cursor()
+        c.execute("SELECT role_id FROM users WHERE id = ?", (user_id,))
+        target_user = c.fetchone()
+        
+        if not target_user:
+            return jsonify({"error": "User not found"}), 404
+            
+        target_role_id = target_user[0]
+        
+        # 如果要修改的是超級管理員，則只有超級管理員才能修改
+        if target_role_id == 1 and current_user.role_id != 1:
+            return jsonify({"error": "Only super administrators can modify other super administrators"}), 403
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
     data = request.get_json()
     password = data.get("password")
     if not password:
         return jsonify({"error": "Missing password"}), 400
 
-    hashed = generate_password_hash(password)
     try:
-        hashed = generate_password_hash(password)
         conn = sqlite3.connect('kao_power_water.db', timeout=10)
         c = conn.cursor()
         c.execute("UPDATE users SET password = ?, password_updated_at = ? WHERE id = ?",
-                  (hashed, datetime.now().isoformat(), user_id))
+                  (generate_password_hash(password), datetime.now().isoformat(), user_id))
         conn.commit()
         return jsonify({"success": True})
     except Exception as e:
