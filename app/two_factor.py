@@ -55,9 +55,6 @@ class TwoFactorAuth:
                     <div class="mb-3">
                         <label class="block text-sm font-medium text-gray-700 mb-1">密鑰 (Secret Key)</label>
                         <div class="bg-gray-100 p-2 rounded font-mono text-sm break-all">{secret}</div>
-                        <button onclick="copyToClipboard('{secret}')" class="mt-1 text-xs text-blue-600 hover:text-blue-800 underline">
-                            複製密鑰
-                        </button>
                     </div>
                 </div>
                 
