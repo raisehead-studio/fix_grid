@@ -38,6 +38,86 @@ def setup_2fa():
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@two_factor_bp.route('/api/2fa/force-setup', methods=['POST'])
+def force_setup_2fa():
+    """強制設定 2FA - 不需要登入驗證"""
+    try:
+        # 檢查 session 中是否有待設定的用戶資訊
+        pending_user = session.get('pending_user')
+        if not pending_user:
+            return jsonify({'status': 'error', 'message': '請先登入'}), 400
+        
+        # 生成新的密鑰和備用碼
+        secret = two_factor_auth.generate_secret()
+        backup_codes = two_factor_auth.generate_backup_codes()
+        
+        # 生成手動設定說明
+        totp_uri = two_factor_auth.get_totp_uri(pending_user['username'], secret)
+        setup_instructions = two_factor_auth.generate_setup_instructions(
+            pending_user['username'], secret, totp_uri
+        )
+        
+        # 暫存到 session 中，等待驗證後才正式啟用
+        session['pending_2fa'] = {
+            'secret': secret,
+            'backup_codes': backup_codes,
+            'setup_instructions': setup_instructions['content']
+        }
+        
+        return jsonify({
+            'status': 'success',
+            'setup_instructions': setup_instructions['content'],
+            'secret': secret,
+            'backup_codes': backup_codes
+        })
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@two_factor_bp.route('/api/2fa/force-verify', methods=['POST'])
+def force_verify_2fa():
+    """強制驗證 2FA - 不需要登入驗證"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        
+        if not token:
+            return jsonify({'status': 'error', 'message': '請輸入驗證碼'}), 400
+        
+        # 檢查 session 中是否有待設定的 2FA 資訊
+        pending_2fa = session.get('pending_2fa')
+        pending_user = session.get('pending_user')
+        
+        if not pending_2fa or not pending_user:
+            return jsonify({'status': 'error', 'message': '請先設定 2FA'}), 400
+        
+        secret = pending_2fa['secret']
+        
+        # 驗證 TOTP 令牌
+        if two_factor_auth.verify_totp(secret, token):
+            # 啟用 2FA
+            if two_factor_auth.setup_2fa(
+                pending_user['id'], 
+                secret, 
+                pending_2fa['backup_codes']
+            ):
+                # 清除 session 中的暫存資料
+                session.pop('pending_2fa', None)
+                session.pop('pending_user', None)
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': '2FA 設定成功',
+                    'backup_codes': pending_2fa['backup_codes']
+                })
+            else:
+                return jsonify({'status': 'error', 'message': '啟用 2FA 失敗'}), 500
+        else:
+            return jsonify({'status': 'error', 'message': '驗證碼錯誤'}), 400
+            
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 @two_factor_bp.route('/api/2fa/verify-setup', methods=['POST'])
 @login_required
 def verify_setup():

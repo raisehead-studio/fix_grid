@@ -223,6 +223,27 @@ def create_app():
                     }
                     return redirect(url_for('verify_2fa'))
 
+                # 檢查是否需要強制設定 2FA
+                if not user['two_factor_enabled']:
+                    # 將用戶資訊暫存到 session，強制設定 2FA
+                    session['pending_user'] = {
+                        'id': user['id'],
+                        'username': user['username'],
+                        'full_name': user['full_name'],
+                        'phone': user['phone'],
+                        'district_id': user['district_id'],
+                        'district': user['district'],
+                        'village_id': user['village_id'],
+                        'village': user['village'],
+                        'role_id': user['role_id'],
+                        'role_name': user['role_name'],
+                        'password_updated_at': user['password_updated_at'],
+                        'two_factor_enabled': user['two_factor_enabled'],
+                        'two_factor_secret': user['two_factor_secret'],
+                        'ip': ip
+                    }
+                    return redirect(url_for('force_setup_2fa'))
+
                 # 不需要 2FA，直接登入
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
@@ -294,10 +315,52 @@ def create_app():
             else:
                 # 記錄失敗的嘗試
                 two_factor_auth.record_attempt(pending_user['id'], pending_user['ip'], False)
-                flash("驗證碼或備用碼錯誤", "danger")
-                return render_template('verify_2fa.html', username=pending_user['username'])
+                flash("驗證碼錯誤", "danger")
 
         return render_template('verify_2fa.html', username=pending_user['username'])
+
+    @app.route('/force-setup-2fa', methods=['GET', 'POST'])
+    def force_setup_2fa():
+        """強制設定 2FA 頁面"""
+        pending_user = session.get('pending_user')
+        if not pending_user:
+            flash("請先登入", "danger")
+            return redirect(url_for('login'))
+
+        if request.method == 'POST':
+            # 處理 2FA 設定
+            from .two_factor import TwoFactorAuth
+            two_factor_auth = TwoFactorAuth()
+            
+            # 生成新的密鑰和備用碼
+            secret = two_factor_auth.generate_secret()
+            backup_codes = two_factor_auth.generate_backup_codes()
+            
+            # 啟用 2FA
+            if two_factor_auth.setup_2fa(pending_user['id'], secret, backup_codes):
+                # 清除 session 中的暫存資料
+                session.pop('pending_user', None)
+                
+                # 登入用戶
+                login_user(User(
+                    pending_user['id'], pending_user['username'], pending_user['full_name'], pending_user['phone'],
+                    pending_user['district_id'], pending_user['district'], pending_user['village_id'], pending_user['village'], 
+                    pending_user['role_id'], pending_user['role_name'], pending_user['password_updated_at'],
+                    True, secret, ip=pending_user['ip']
+                ), remember=True)
+
+                if needs_password_update(pending_user['password_updated_at'], pending_user['id']):
+                    return redirect(url_for('force_change_password'))
+
+                # 記錄登入紀錄
+                insert_login_log(pending_user['id'], pending_user['ip'])
+
+                flash("2FA 設定成功！您的帳號現在受到雙因素認證保護。", "success")
+                return redirect(url_for('page_info', page='profile'))
+            else:
+                flash("2FA 設定失敗，請重試", "danger")
+
+        return render_template('force_setup_2fa.html', username=pending_user['username'])
 
     @app.route('/force_change_password', methods=['GET', 'POST'])
     @login_required
