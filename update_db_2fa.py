@@ -5,9 +5,13 @@
 一鍵更新資料庫結構，添加 Google Authenticator 雙因素認證相關功能
 """
 
-import sqlite3
 import sys
 import os
+
+# 添加 libs 目錄到 Python 路徑
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs'))
+
+import sqlite3
 
 def update_database():
     """更新資料庫結構，添加 2FA 相關欄位和表格"""
