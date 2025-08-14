@@ -57,6 +57,21 @@
       <div class="mt-6">
         <button onclick="showOwnLoginLogs()" class="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800">查看登入記錄</button>
       </div>
+      
+      <!-- 系統管理員 IP 鎖定管理 -->
+      {% if current_user.role_id == 1 %}
+      <div class="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-lg font-semibold text-red-800">🔒 IP 鎖定管理</h3>
+            <p class="text-sm text-red-600">管理被鎖定的 IP 地址</p>
+          </div>
+          <button onclick="showIPLockoutManagement()" class="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700">
+            管理 IP 鎖定
+          </button>
+        </div>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -260,6 +275,72 @@
       </div>
     </div>
   </div>
+
+  <!-- IP 鎖定管理 Modal -->
+  <div id="ipLockoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white p-6 rounded shadow w-full max-w-6xl max-h-[80vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold">🔒 IP 鎖定管理</h3>
+        <button onclick="closeIPLockoutModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      
+      <!-- 統計資訊 -->
+      <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded">
+        <div class="flex items-center space-x-4">
+          <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600" id="total-locked-ips">0</div>
+            <div class="text-sm text-blue-600">被鎖定 IP</div>
+          </div>
+          <div class="text-center">
+            <div class="text-2xl font-bold text-green-600" id="total-unlocked-ips">0</div>
+            <div class="text-sm text-green-600">已解除鎖定</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 操作按鈕 -->
+      <div class="mb-4 flex space-x-2">
+        <button onclick="refreshIPLockoutList()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          🔄 重新整理
+        </button>
+        <button onclick="unlockAllIPs()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+          🔓 解除所有鎖定
+        </button>
+      </div>
+      
+      <!-- IP 列表 -->
+      <div class="overflow-x-auto">
+        <table class="w-full border">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="p-2 border text-left">IP 地址</th>
+              <th class="p-2 border text-center">失敗次數</th>
+              <th class="p-2 border text-center">鎖定到期時間</th>
+              <th class="p-2 border text-center">剩餘時間</th>
+              <th class="p-2 border text-center">最後失敗時間</th>
+              <th class="p-2 border text-center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="ip-lockout-body">
+            <tr>
+              <td class="p-2 border text-center" colspan="6">載入中...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- 載入中 -->
+      <div id="ip-lockout-loading" class="hidden mt-4 text-center">
+        <div class="inline-flex items-center">
+          <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="text-blue-600">處理中...</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
 
@@ -326,6 +407,15 @@ function close2FAModal() {
 
 function closeLoginLogModal() {
   document.getElementById('loginLogModal').classList.add('hidden');
+}
+
+function showIPLockoutManagement() {
+  document.getElementById('ipLockoutModal').classList.remove('hidden');
+  refreshIPLockoutList();
+}
+
+function closeIPLockoutModal() {
+  document.getElementById('ipLockoutModal').classList.add('hidden');
 }
 
 // 2FA 相關函數
@@ -660,6 +750,170 @@ function showModalMessage(msg, status) {
   document.getElementById("old_password").value = "";
   document.getElementById("new_password").value = "";
   document.getElementById("confirm_password").value = "";
+}
+
+// IP 鎖定管理相關函數
+async function refreshIPLockoutList() {
+  try {
+    showIPLockoutLoading(true);
+    
+    const response = await fetch('/api/ip-lockout/admin/list');
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      displayIPLockoutList(data.locked_ips);
+      updateIPLockoutStats(data.total_count);
+    } else {
+      showIPLockoutError(data.message || '載入失敗');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    showIPLockoutError('載入 IP 鎖定列表時發生錯誤');
+  } finally {
+    showIPLockoutLoading(false);
+  }
+}
+
+function displayIPLockoutList(lockedIPs) {
+  const tbody = document.getElementById('ip-lockout-body');
+  
+  if (lockedIPs.length === 0) {
+    tbody.innerHTML = '<tr><td class="p-2 border text-center" colspan="6">目前沒有被鎖定的 IP</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = '';
+  
+  lockedIPs.forEach(ip => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="p-2 border font-mono">${ip.ip_address}</td>
+      <td class="p-2 border text-center">${ip.failed_attempts}</td>
+      <td class="p-2 border text-center">${formatDateTime(ip.locked_until)}</td>
+      <td class="p-2 border text-center">
+        <span class="px-2 py-1 rounded text-xs ${ip.remaining_time === '已過期' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}">
+          ${ip.remaining_time || '未知'}
+        </span>
+      </td>
+      <td class="p-2 border text-center">${formatDateTime(ip.last_failed_at)}</td>
+      <td class="p-2 border text-center">
+        <button onclick="unlockSpecificIP('${ip.ip_address}')" class="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">
+          🔓 解除鎖定
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateIPLockoutStats(totalLocked) {
+  document.getElementById('total-locked-ips').textContent = totalLocked;
+  document.getElementById('total-unlocked-ips').textContent = '0'; // 可以根據需要計算
+}
+
+async function unlockSpecificIP(ipAddress) {
+  if (!confirm(`確定要解除 IP ${ipAddress} 的鎖定嗎？`)) {
+    return;
+  }
+  
+  try {
+    showIPLockoutLoading(true);
+    
+    const response = await fetch('/api/ip-lockout/admin/unlock', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ip_address: ipAddress })
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      alert(`✅ ${data.message}`);
+      refreshIPLockoutList(); // 重新載入列表
+    } else {
+      alert(`❌ ${data.message}`);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('解除鎖定時發生錯誤');
+  } finally {
+    showIPLockoutLoading(false);
+  }
+}
+
+async function unlockAllIPs() {
+  if (!confirm('確定要解除所有 IP 的鎖定嗎？此操作不可撤銷！')) {
+    return;
+  }
+  
+  try {
+    showIPLockoutLoading(true);
+    
+    // 獲取所有被鎖定的 IP
+    const response = await fetch('/api/ip-lockout/admin/list');
+    const data = await response.json();
+    
+    if (data.status !== 'success' || data.locked_ips.length === 0) {
+      alert('沒有找到被鎖定的 IP');
+      return;
+    }
+    
+    // 逐一解除鎖定
+    let successCount = 0;
+    for (const ip of data.locked_ips) {
+      try {
+        const unlockResponse = await fetch('/api/ip-lockout/admin/unlock', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ip_address: ip.ip_address })
+        });
+        
+        const unlockData = await unlockResponse.json();
+        if (unlockData.status === 'success') {
+          successCount++;
+        }
+      } catch (error) {
+        console.error(`解除 IP ${ip.ip_address} 鎖定失敗:`, error);
+      }
+    }
+    
+    alert(`✅ 成功解除 ${successCount} 個 IP 的鎖定`);
+    refreshIPLockoutList(); // 重新載入列表
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('批量解除鎖定時發生錯誤');
+  } finally {
+    showIPLockoutLoading(false);
+  }
+}
+
+function showIPLockoutLoading(show) {
+  const loading = document.getElementById('ip-lockout-loading');
+  if (show) {
+    loading.classList.remove('hidden');
+  } else {
+    loading.classList.add('hidden');
+  }
+}
+
+function showIPLockoutError(message) {
+  alert(`❌ ${message}`);
+}
+
+function formatDateTime(dateTimeStr) {
+  if (!dateTimeStr) return 'N/A';
+  
+  try {
+    const date = new Date(dateTimeStr);
+    return date.toLocaleString('zh-TW');
+  } catch (error) {
+    return dateTimeStr;
+  }
 }
 </script>
 {% endblock %}
