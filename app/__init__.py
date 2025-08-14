@@ -200,8 +200,9 @@ def create_app():
         if request.method == 'POST':
             # 檢查 IP 是否被鎖定
             from .ip_lockout import IPLockoutManager
+            from .utils import get_client_ip
             ip_lockout_manager = IPLockoutManager()
-            ip = request.remote_addr
+            ip = get_client_ip(request)
             
             is_locked, failed_attempts, locked_until = ip_lockout_manager.check_ip_lockout(ip)
             
@@ -326,7 +327,8 @@ def create_app():
     @login_required
     def force_change_password():
         if request.method == 'POST':
-            ip = request.remote_addr
+            from .utils import get_client_ip
+            ip = get_client_ip(request)
             new_password = request.form['new_password']
 
             try:
@@ -530,7 +532,8 @@ def create_app():
     @app.before_request
     def attach_ip_to_current_user():
         if current_user.is_authenticated:
-            current_user.ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+            from .utils import get_client_ip
+            current_user.ip = get_client_ip(request)
 
     return app
 

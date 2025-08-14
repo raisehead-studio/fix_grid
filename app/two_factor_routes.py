@@ -181,7 +181,8 @@ def verify_login_2fa():
         if not info:
             return jsonify({'status': 'error', 'message': '無法取得 2FA 資訊'}), 500
         
-        ip_address = request.remote_addr
+        from .utils import get_client_ip
+        ip_address = get_client_ip(request)
         success = False
         
         # 驗證 TOTP 令牌

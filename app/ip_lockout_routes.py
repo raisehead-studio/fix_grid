@@ -9,7 +9,8 @@ ip_lockout_manager = IPLockoutManager()
 def get_ip_lockout_status():
     """獲取當前 IP 的鎖定狀態"""
     try:
-        ip_address = request.remote_addr
+        from .utils import get_client_ip
+        ip_address = get_client_ip(request)
         lockout_info = ip_lockout_manager.get_lockout_info(ip_address)
         
         if lockout_info:
