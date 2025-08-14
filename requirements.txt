@@ -1,10 +1,4 @@
-flask
-flask-login
-flask-wtf
-wtforms
-werkzeug
-python-dotenv
-openpyxl
-pyotp
-qrcode
-Pillow
+Flask==2.3.3
+Flask-Login==0.6.3
+Werkzeug==2.3.7
+pyotp==2.9.0

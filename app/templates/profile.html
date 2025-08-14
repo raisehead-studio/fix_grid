@@ -143,8 +143,8 @@
               </p>
               <ol class="list-decimal list-inside text-sm text-blue-700 space-y-1">
                 <li>下載並安裝 Google Authenticator 應用程式</li>
-                <li>點擊下方「生成 QR Code」按鈕</li>
-                <li>使用 Google Authenticator 掃描 QR Code</li>
+                <li>點擊下方「生成金鑰」按鈕</li>
+                <li>使用 Google Authenticator 按照步驟輸入金鑰</li>
                 <li>輸入應用程式顯示的 6 位數驗證碼</li>
                 <li>完成設定</li>
               </ol>
@@ -152,7 +152,7 @@
 
             <div class="flex space-x-3">
               <button onclick="generateQRCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                生成 QR Code
+                生成金鑰
               </button>
               <button onclick="showManualSetup()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                 手動設定
@@ -414,15 +414,16 @@ async function generateQRCode() {
     const data = await response.json();
     
     if (data.status === 'success') {
-      document.getElementById('qr-code-image').innerHTML = `<img src="${data.qr_code}" alt="QR Code" class="mx-auto">`;
+      // 顯示手動設定說明
+      document.getElementById('qr-code-image').innerHTML = data.setup_instructions;
       document.getElementById('secret-display').textContent = data.secret;
       document.getElementById('qr-code-section').classList.remove('hidden');
     } else {
-      showError(data.message || '生成 QR Code 失敗');
+      showError(data.message || '生成設定說明失敗');
     }
   } catch (error) {
     console.error('Error:', error);
-    showError('生成 QR Code 時發生錯誤');
+    showError('生成設定說明時發生錯誤');
   }
 }
 
@@ -532,6 +533,40 @@ function showSuccess(message) {
 
 function showError(message) {
   alert('錯誤：' + message);
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    // 顯示複製成功提示
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '已複製！';
+    button.classList.add('text-green-600');
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.classList.remove('text-green-600');
+    }, 2000);
+  }).catch(err => {
+    console.error('複製失敗:', err);
+    // 回退方案：使用傳統方法
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '已複製！';
+    button.classList.add('text-green-600');
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.classList.remove('text-green-600');
+    }, 2000);
+  });
 }
 
 async function showOwnLoginLogs() {

@@ -15,20 +15,22 @@ def setup_2fa():
         secret = two_factor_auth.generate_secret()
         backup_codes = two_factor_auth.generate_backup_codes()
         
-        # 生成 QR Code
+        # 生成手動設定說明
         totp_uri = two_factor_auth.get_totp_uri(current_user.username, secret)
-        qr_code = two_factor_auth.generate_qr_code(totp_uri)
+        setup_instructions = two_factor_auth.generate_setup_instructions(
+            current_user.username, secret, totp_uri
+        )
         
         # 暫存到 session 中，等待驗證後才正式啟用
         session['pending_2fa'] = {
             'secret': secret,
             'backup_codes': backup_codes,
-            'qr_code': qr_code
+            'setup_instructions': setup_instructions['content']
         }
         
         return jsonify({
             'status': 'success',
-            'qr_code': qr_code,
+            'setup_instructions': setup_instructions['content'],
             'secret': secret,
             'backup_codes': backup_codes
         })

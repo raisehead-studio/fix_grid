@@ -1,11 +1,8 @@
 import pyotp
-import qrcode
 import json
 import secrets
 import sqlite3
 from datetime import datetime
-from io import BytesIO
-import base64
 
 class TwoFactorAuth:
     def __init__(self, db_path="kao_power_water.db"):
@@ -25,32 +22,64 @@ class TwoFactorAuth:
         return codes
     
     def get_totp_uri(self, username, secret, issuer="高雄市停電停水通報系統"):
-        """生成 TOTP URI 用於 QR Code"""
+        """生成 TOTP URI 用於手動設定"""
         return pyotp.totp.TOTP(secret).provisioning_uri(
             name=username,
             issuer_name=issuer
         )
     
-    def generate_qr_code(self, totp_uri):
-        """生成 QR Code 圖片"""
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(totp_uri)
-        qr.make(fit=True)
-        
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        # 轉換為 base64 字串
-        buffer = BytesIO()
-        img.save(buffer, format='PNG')
-        buffer.seek(0)
-        img_str = base64.b64encode(buffer.getvalue()).decode()
-        
-        return f"data:image/png;base64,{img_str}"
+    def generate_setup_instructions(self, username, secret, totp_uri):
+        """生成手動設定說明，不需要 QR Code"""
+        return {
+            'type': 'manual',
+            'content': f"""
+            <div class="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="mb-4">
+                    <svg class="h-16 w-16 mx-auto text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">手動設定 Google Authenticator</h3>
+                
+                <div class="bg-white p-4 rounded-lg border mb-4 text-left">
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">帳號名稱</label>
+                        <div class="bg-gray-100 p-2 rounded font-mono text-sm">{username}</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">服務名稱</label>
+                        <div class="bg-gray-100 p-2 rounded font-mono text-sm">高雄市停電停水通報系統</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">密鑰 (Secret Key)</label>
+                        <div class="bg-gray-100 p-2 rounded font-mono text-sm break-all">{secret}</div>
+                        <button onclick="copyToClipboard('{secret}')" class="mt-1 text-xs text-blue-600 hover:text-blue-800 underline">
+                            複製密鑰
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="text-sm text-gray-600 space-y-2">
+                    <p><strong>設定步驟：</strong></p>
+                    <ol class="list-decimal list-inside space-y-1 text-left">
+                        <li>開啟 Google Authenticator 應用程式</li>
+                        <li>點擊「+」號新增帳號</li>
+                        <li>選擇「手動輸入」</li>
+                        <li>輸入上述資訊</li>
+                        <li>點擊「完成」</li>
+                    </ol>
+                </div>
+                
+                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p class="text-sm text-yellow-800">
+                        <strong>注意：</strong>設定完成後，請在下方輸入驗證碼來啟用 2FA
+                    </p>
+                </div>
+            </div>
+            """
+        }
     
     def verify_totp(self, secret, token):
         """驗證 TOTP 令牌"""
