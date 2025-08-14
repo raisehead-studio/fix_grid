@@ -20,6 +20,7 @@ from .water_routes import water_bp
 from .taiwater_power_routes import taiwater_power_bp
 from .disaster_routes import disaster_bp
 from .two_factor_routes import two_factor_bp
+from .ip_lockout_routes import ip_lockout_bp
 
 login_manager = LoginManager()
 
@@ -81,6 +82,7 @@ def create_app():
     app.register_blueprint(taiwater_power_bp)
     app.register_blueprint(disaster_bp)
     app.register_blueprint(two_factor_bp)
+    app.register_blueprint(ip_lockout_bp)
 
     # DNS 驗證路由 - 不需要登入驗證
     @app.route('/.well-known/<path:filename>')
@@ -196,12 +198,25 @@ def create_app():
             return redirect(url_for('page_info', page='profile'))
 
         if request.method == 'POST':
+            # 檢查 IP 是否被鎖定
+            from .ip_lockout import IPLockoutManager
+            ip_lockout_manager = IPLockoutManager()
+            ip = request.remote_addr
+            
+            is_locked, failed_attempts, locked_until = ip_lockout_manager.check_ip_lockout(ip)
+            
+            if is_locked:
+                flash(f"您的 IP 已被鎖定，請等待鎖定時間結束後再試。剩餘時間：{locked_until}", "error")
+                return render_template('login.html')
+            
             username = request.form['username']
             password = request.form['password']
             user = get_user_by_username(username)
+            
             if user and check_password_hash(user['password'], password):
-                ip = request.remote_addr
-
+                # 登入成功，重置 IP 失敗記錄
+                ip_lockout_manager.record_successful_login(ip)
+                
                 # 檢查是否需要 2FA 驗證
                 if user['two_factor_enabled']:
                     # 將用戶資訊暫存到 session，等待 2FA 驗證
@@ -240,7 +255,15 @@ def create_app():
 
                 return redirect(url_for('page_info', page='profile'))
             else:
-                flash("帳號或密碼錯誤", "danger")
+                # 登入失敗，記錄失敗次數
+                is_locked, failed_attempts, locked_until = ip_lockout_manager.record_failed_login(ip)
+                
+                if is_locked:
+                    flash(f"登入失敗次數過多，您的 IP 已被鎖定 10 分鐘。", "error")
+                else:
+                    remaining_attempts = 3 - failed_attempts
+                    flash(f"帳號或密碼錯誤，剩餘嘗試次數：{remaining_attempts}", "error")
+                
         return render_template('login.html')
 
     @app.route('/verify-2fa', methods=['GET', 'POST'])
