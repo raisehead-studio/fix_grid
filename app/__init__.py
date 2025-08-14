@@ -3,11 +3,11 @@ import sqlite3
 import os
 
 from datetime import datetime, timedelta
-from flask import Flask, render_template, redirect, request, url_for, flash, abort, send_file, jsonify, current_app
+from flask import Flask, render_template, redirect, request, url_for, flash, abort, send_file, jsonify, current_app, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from jinja2 import TemplateNotFound
 from werkzeug.security import check_password_hash, generate_password_hash
-from .models import get_user_by_username, get_user_by_id_with_role, get_role_page_permissions_from_db
+from .models import get_user_by_username, get_user_by_id_with_role, get_role_page_permissions_from_db, check_2fa_required
 from .utils import page_name_map, check_page_view_permission
 from io import BytesIO
 from openpyxl import load_workbook
@@ -19,6 +19,7 @@ from .power_routes import power_bp
 from .water_routes import water_bp
 from .taiwater_power_routes import taiwater_power_bp
 from .disaster_routes import disaster_bp
+from .two_factor_routes import two_factor_bp
 
 login_manager = LoginManager()
 
@@ -79,6 +80,7 @@ def create_app():
     app.register_blueprint(water_bp)
     app.register_blueprint(taiwater_power_bp)
     app.register_blueprint(disaster_bp)
+    app.register_blueprint(two_factor_bp)
 
     # DNS 驗證路由 - 不需要登入驗證
     @app.route('/.well-known/<path:filename>')
@@ -144,7 +146,7 @@ def create_app():
             abort(403)
 
     class User(UserMixin):
-        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name, password_updated_at, ip=None):
+        def __init__(self, id, username, full_name, phone, district_id, district, village_id, village, role_id, role_name, password_updated_at, two_factor_enabled=False, two_factor_secret=None, ip=None):
             self.id = id
             self.username = username
             self.full_name = full_name
@@ -156,6 +158,8 @@ def create_app():
             self.role_id = role_id
             self.role_name = role_name
             self.password_updated_at = password_updated_at
+            self.two_factor_enabled = two_factor_enabled
+            self.two_factor_secret = two_factor_secret
             self.ip = ip
 
     def insert_login_log(user_id, ip):
@@ -179,7 +183,9 @@ def create_app():
         if user:
             return User(
                 user['id'], user['username'], user['full_name'], user['phone'],
-                user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], user['password_updated_at']
+                user['district_id'], user['district'], user['village_id'], user['village'], 
+                user['role_id'], user['role_name'], user['password_updated_at'],
+                user['two_factor_enabled'], user['two_factor_secret']
             )
         return None
 
@@ -196,9 +202,33 @@ def create_app():
             if user and check_password_hash(user['password'], password):
                 ip = request.remote_addr
 
+                # 檢查是否需要 2FA 驗證
+                if user['two_factor_enabled']:
+                    # 將用戶資訊暫存到 session，等待 2FA 驗證
+                    session['pending_user'] = {
+                        'id': user['id'],
+                        'username': user['username'],
+                        'full_name': user['full_name'],
+                        'phone': user['phone'],
+                        'district_id': user['district_id'],
+                        'district': user['district'],
+                        'village_id': user['village_id'],
+                        'village': user['village'],
+                        'role_id': user['role_id'],
+                        'role_name': user['role_name'],
+                        'password_updated_at': user['password_updated_at'],
+                        'two_factor_enabled': user['two_factor_enabled'],
+                        'two_factor_secret': user['two_factor_secret'],
+                        'ip': ip
+                    }
+                    return redirect(url_for('verify_2fa'))
+
+                # 不需要 2FA，直接登入
                 login_user(User(
                     user['id'], user['username'], user['full_name'], user['phone'],
-                    user['district_id'], user['district'], user['village_id'], user['village'], user['role_id'], user['role_name'], user['password_updated_at'], ip=ip
+                    user['district_id'], user['district'], user['village_id'], user['village'], 
+                    user['role_id'], user['role_name'], user['password_updated_at'],
+                    user['two_factor_enabled'], user['two_factor_secret'], ip=ip
                 ), remember=True)
 
                 if needs_password_update(user['password_updated_at'], user['id']):
@@ -212,6 +242,62 @@ def create_app():
             else:
                 flash("帳號或密碼錯誤", "danger")
         return render_template('login.html')
+
+    @app.route('/verify-2fa', methods=['GET', 'POST'])
+    def verify_2fa():
+        """2FA 驗證頁面"""
+        pending_user = session.get('pending_user')
+        if not pending_user:
+            flash("請先登入", "danger")
+            return redirect(url_for('login'))
+
+        if request.method == 'POST':
+            token = request.form.get('token')
+            backup_code = request.form.get('backup_code')
+            
+            if not token and not backup_code:
+                flash("請輸入驗證碼或備用碼", "danger")
+                return render_template('verify_2fa.html', username=pending_user['username'])
+
+            # 驗證 2FA
+            from .two_factor import TwoFactorAuth
+            two_factor_auth = TwoFactorAuth()
+            
+            success = False
+            if token:
+                success = two_factor_auth.verify_totp(pending_user['two_factor_secret'], token)
+            elif backup_code:
+                success = two_factor_auth.verify_backup_code(pending_user['id'], backup_code)
+
+            if success:
+                # 記錄成功的嘗試
+                two_factor_auth.record_attempt(pending_user['id'], pending_user['ip'], True)
+                
+                # 清除 session 中的暫存資料
+                session.pop('pending_user', None)
+                
+                # 登入用戶
+                login_user(User(
+                    pending_user['id'], pending_user['username'], pending_user['full_name'], pending_user['phone'],
+                    pending_user['district_id'], pending_user['district'], pending_user['village_id'], pending_user['village'], 
+                    pending_user['role_id'], pending_user['role_name'], pending_user['password_updated_at'],
+                    pending_user['two_factor_enabled'], pending_user['two_factor_secret'], ip=pending_user['ip']
+                ), remember=True)
+
+                if needs_password_update(pending_user['password_updated_at'], pending_user['id']):
+                    return redirect(url_for('force_change_password'))
+
+                # 記錄登入紀錄
+                insert_login_log(pending_user['id'], pending_user['ip'])
+
+                return redirect(url_for('page_info', page='profile'))
+            else:
+                # 記錄失敗的嘗試
+                two_factor_auth.record_attempt(pending_user['id'], pending_user['ip'], False)
+                flash("驗證碼或備用碼錯誤", "danger")
+                return render_template('verify_2fa.html', username=pending_user['username'])
+
+        return render_template('verify_2fa.html', username=pending_user['username'])
 
     @app.route('/force_change_password', methods=['GET', 'POST'])
     @login_required
@@ -301,7 +387,32 @@ def create_app():
     @app.route('/page/<page>')
     @login_required
     def page_info(page):
-        # 權限檢查
+        # 特殊頁面：允許所有已登入用戶訪問
+        special_pages = ['two_factor']
+        
+        if page in special_pages:
+            # 對於特殊頁面，跳過權限檢查，直接允許訪問
+            # 但需要提供基本的 context 變數以支援 navigation.html
+            context = {
+                "role": current_user.role_name,
+                "current_page": page,
+                "current_page_name": page_name_map.get(page, page),
+                "actions": [],  # 特殊頁面沒有特定權限
+                "pages": {page: []},  # 提供當前頁面資訊
+                "page_name_map": page_name_map,
+                "user_permissions": [],
+                "current_user": current_user,
+            }
+            
+            # 預設檢查該頁面是否有對應模板
+            target_template = f"{page}.html"
+            
+            try:
+                return render_template(target_template, **context)
+            except TemplateNotFound:
+                return render_template("page_info.html", **context)
+        
+        # 一般頁面的權限檢查
         all_permissions = get_role_page_permissions_from_db()
         role_name = current_user.role_name
         

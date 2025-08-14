@@ -5,3 +5,6 @@ wtforms
 werkzeug
 python-dotenv
 openpyxl
+pyotp
+qrcode
+Pillow

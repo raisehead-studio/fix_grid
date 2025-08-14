@@ -18,6 +18,8 @@ DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS districts;
 DROP TABLE IF EXISTS villages;
 DROP TABLE IF EXISTS user_login_logs;
+DROP TABLE IF EXISTS two_factor_settings;
+DROP TABLE IF EXISTS two_factor_attempts;
 """)
 
 cursor.executescript("""
@@ -61,6 +63,9 @@ CREATE TABLE users (
     updated_at DATETIME DEFAULT current_timestamp,
     deleted_at DATETIME,
     password_updated_at DATETIME DEFAULT current_timestamp,
+    two_factor_secret TEXT,
+    two_factor_enabled BOOLEAN DEFAULT 0,
+    backup_codes TEXT,
     FOREIGN KEY(role_id) REFERENCES roles(id),
     FOREIGN KEY(district_id) REFERENCES districts(id),
     FOREIGN KEY(village_id) REFERENCES villages(id)
@@ -84,6 +89,27 @@ CREATE TABLE IF NOT EXISTS taipower_reports (
   created_by INTEGER,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS two_factor_settings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    secret_key TEXT NOT NULL,
+    enabled BOOLEAN DEFAULT 0,
+    backup_codes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE TABLE IF NOT EXISTS two_factor_attempts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    ip_address TEXT NOT NULL,
+    attempt_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+    success BOOLEAN DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_two_factor_settings_user_id ON two_factor_settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_two_factor_attempts_user_id ON two_factor_attempts(user_id);
+CREATE INDEX IF NOT EXISTS idx_two_factor_attempts_time ON two_factor_attempts(attempt_time);
 """)
 roles = ['超級管理員', '管理員', '民政局幹事', '里幹事', '台電人員', '台水人員', '上級長官']
 cursor.executemany("INSERT INTO roles (name) VALUES (?)", [(r,) for r in roles])
@@ -115,6 +141,7 @@ permissions = [
     ('power_outage', 'excel'),
     ('water_outage', 'excel'),
     ('taiwater_power_outage', 'excel'),
+    ('two_factor', 'manage'), -- 新增 2FA 管理權限
 ]
 cursor.executemany("INSERT INTO permissions (page, permission) VALUES (?, ?)", permissions)
 

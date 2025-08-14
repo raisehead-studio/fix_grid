@@ -9,6 +9,7 @@ page_name_map = {
     "power_stats": "停電彙整統計表（表五）",
     "water_stats": "停水彙整統計表（表六）",
     "taiwater_disaster": "台水公司災害通報彙整（表七）",
+    "two_factor": "雙因素認證管理",
 }
 
 def check_page_permission(page, role_name, all_permissions):

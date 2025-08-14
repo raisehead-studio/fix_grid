@@ -1,0 +1,429 @@
+{% extends "navigation.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700">
+                <h1 class="text-2xl font-bold text-white">雙因素認證 (2FA) 管理</h1>
+                <p class="text-blue-100 mt-1">增強您的帳號安全性</p>
+            </div>
+
+            <div class="p-6">
+                <!-- 2FA 狀態顯示 -->
+                <div id="2fa-status" class="mb-8">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">目前狀態</h3>
+                                <p class="text-sm text-gray-600 mt-1">檢查您的 2FA 設定狀態</p>
+                            </div>
+                            <button onclick="check2FAStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                重新整理
+                            </button>
+                        </div>
+                        <div id="status-content" class="mt-4">
+                            <div class="animate-pulse">
+                                <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2FA 設定區域 -->
+                <div id="2fa-setup" class="mb-8 hidden">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-blue-900 mb-4">設定雙因素認證</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <p class="text-sm text-blue-700 mb-3">
+                                    請按照以下步驟設定 2FA：
+                                </p>
+                                <ol class="list-decimal list-inside text-sm text-blue-700 space-y-2">
+                                    <li>下載並安裝 Google Authenticator 應用程式</li>
+                                    <li>點擊下方「生成 QR Code」按鈕</li>
+                                    <li>使用 Google Authenticator 掃描 QR Code</li>
+                                    <li>輸入應用程式顯示的 6 位數驗證碼</li>
+                                    <li>完成設定</li>
+                                </ol>
+                            </div>
+
+                            <div class="flex space-x-4">
+                                <button onclick="generateQRCode()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                                    生成 QR Code
+                                </button>
+                                <button onclick="showManualSetup()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                                    手動設定
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- QR Code 顯示區域 -->
+                        <div id="qr-code-section" class="hidden mt-6">
+                            <div class="text-center">
+                                <div id="qr-code-image" class="mx-auto mb-4"></div>
+                                <div id="secret-key" class="mb-4">
+                                    <p class="text-sm text-gray-600 mb-2">密鑰：</p>
+                                    <code class="bg-gray-100 px-3 py-2 rounded text-sm font-mono" id="secret-display"></code>
+                                </div>
+                                <div class="mb-4">
+                                    <label for="verification-code" class="block text-sm font-medium text-gray-700 mb-2">
+                                        驗證碼
+                                    </label>
+                                    <input type="text" id="verification-code" maxlength="6" 
+                                           class="w-32 text-center px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="000000">
+                                </div>
+                                <button onclick="verifyAndEnable2FA()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                                    驗證並啟用
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 備用碼顯示區域 -->
+                        <div id="backup-codes-section" class="hidden mt-6">
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-yellow-800 mb-2">備用碼</h4>
+                                <p class="text-sm text-yellow-700 mb-3">
+                                    請將以下備用碼安全保存，當您無法使用 Google Authenticator 時可使用這些碼登入：
+                                </p>
+                                <div id="backup-codes-list" class="grid grid-cols-2 gap-2 text-sm font-mono text-yellow-800"></div>
+                                <p class="text-xs text-yellow-600 mt-2">
+                                    ⚠️ 每個備用碼只能使用一次，使用後會自動失效
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2FA 停用區域 -->
+                <div id="2fa-disable" class="mb-8 hidden">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-red-900 mb-4">停用雙因素認證</h3>
+                        <p class="text-sm text-red-700 mb-4">
+                            停用 2FA 會降低您的帳號安全性。請確認您真的需要停用此功能。
+                        </p>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="disable-password" class="block text-sm font-medium text-gray-700 mb-2">
+                                    確認密碼
+                                </label>
+                                <input type="password" id="disable-password" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                       placeholder="請輸入您的密碼">
+                            </div>
+                            <button onclick="disable2FA()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                                停用 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2FA 記錄 -->
+                <div id="2fa-logs" class="mb-8 hidden">
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">最近的 2FA 嘗試記錄</h3>
+                            <button onclick="refreshLogs()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                重新整理
+                            </button>
+                        </div>
+                        <div id="logs-content">
+                            <div class="animate-pulse">
+                                <div class="h-4 bg-gray-200 rounded w-1/4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 備用碼管理 -->
+                <div id="backup-codes-management" class="mb-8 hidden">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6">
+                        <h3 class="text-lg font-medium text-green-900 mb-4">備用碼管理</h3>
+                        <p class="text-sm text-green-700 mb-4">
+                            查看您目前的備用碼狀態
+                        </p>
+                        <button onclick="showBackupCodes()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                            顯示備用碼
+                        </button>
+                        <div id="current-backup-codes" class="hidden mt-4">
+                            <div class="bg-white border border-green-200 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-green-800 mb-2">目前可用的備用碼</h4>
+                                <div id="current-backup-codes-list" class="grid grid-cols-2 gap-2 text-sm font-mono text-green-800"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 頁面載入時檢查 2FA 狀態
+document.addEventListener('DOMContentLoaded', function() {
+    check2FAStatus();
+});
+
+// 檢查 2FA 狀態
+async function check2FAStatus() {
+    try {
+        const response = await fetch('/api/2fa/status');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            display2FAStatus(data.enabled, data.has_backup_codes);
+        } else {
+            showError('無法取得 2FA 狀態');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('檢查 2FA 狀態時發生錯誤');
+    }
+}
+
+// 顯示 2FA 狀態
+function display2FAStatus(enabled, hasBackupCodes) {
+    const statusContent = document.getElementById('status-content');
+    const setupSection = document.getElementById('2fa-setup');
+    const disableSection = document.getElementById('2fa-disable');
+    const logsSection = document.getElementById('2fa-logs');
+    const backupSection = document.getElementById('backup-codes-management');
+
+    if (enabled) {
+        statusContent.innerHTML = `
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-green-800">2FA 已啟用</p>
+                    <p class="text-sm text-green-600">您的帳號受到雙因素認證保護</p>
+                </div>
+            </div>
+        `;
+        
+        setupSection.classList.add('hidden');
+        disableSection.classList.remove('hidden');
+        logsSection.classList.remove('hidden');
+        backupSection.classList.remove('hidden');
+        
+        // 載入記錄
+        refreshLogs();
+    } else {
+        statusContent.innerHTML = `
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-red-800">2FA 未啟用</p>
+                    <p class="text-sm text-red-600">建議啟用雙因素認證以增強帳號安全性</p>
+                </div>
+            </div>
+        `;
+        
+        setupSection.classList.remove('hidden');
+        disableSection.classList.add('hidden');
+        logsSection.classList.add('hidden');
+        backupSection.classList.add('hidden');
+    }
+}
+
+// 生成 QR Code
+async function generateQRCode() {
+    try {
+        const response = await fetch('/api/2fa/setup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            document.getElementById('qr-code-image').innerHTML = `<img src="${data.qr_code}" alt="QR Code" class="mx-auto">`;
+            document.getElementById('secret-display').textContent = data.secret;
+            document.getElementById('qr-code-section').classList.remove('hidden');
+        } else {
+            showError(data.message || '生成 QR Code 失敗');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('生成 QR Code 時發生錯誤');
+    }
+}
+
+// 顯示手動設定
+function showManualSetup() {
+    document.getElementById('qr-code-section').classList.remove('hidden');
+    document.getElementById('qr-code-image').innerHTML = `
+        <div class="text-center text-gray-500">
+            <svg class="h-24 w-24 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+            </svg>
+            <p>請手動輸入密鑰到 Google Authenticator</p>
+        </div>
+    `;
+}
+
+// 驗證並啟用 2FA
+async function verifyAndEnable2FA() {
+    const code = document.getElementById('verification-code').value.trim();
+    
+    if (!code || code.length !== 6) {
+        showError('請輸入 6 位數驗證碼');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/2fa/verify-setup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token: code })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            showSuccess('2FA 設定成功！');
+            displayBackupCodes(data.backup_codes);
+            check2FAStatus(); // 重新檢查狀態
+        } else {
+            showError(data.message || '驗證失敗');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('驗證時發生錯誤');
+    }
+}
+
+// 顯示備用碼
+function displayBackupCodes(backupCodes) {
+    const backupCodesList = document.getElementById('backup-codes-list');
+    backupCodesList.innerHTML = backupCodes.map(code => `<div>${code}</div>`).join('');
+    document.getElementById('backup-codes-section').classList.remove('hidden');
+}
+
+// 停用 2FA
+async function disable2FA() {
+    const password = document.getElementById('disable-password').value.trim();
+    
+    if (!password) {
+        showError('請輸入密碼');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/2fa/disable', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ password: password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            showSuccess('2FA 已停用');
+            document.getElementById('disable-password').value = '';
+            check2FAStatus(); // 重新檢查狀態
+        } else {
+            showError(data.message || '停用失敗');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('停用時發生錯誤');
+    }
+}
+
+// 重新整理記錄
+async function refreshLogs() {
+    try {
+        const response = await fetch('/api/2fa/attempts');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            displayLogs(data.attempts);
+        } else {
+            showError('無法取得記錄');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('取得記錄時發生錯誤');
+    }
+}
+
+// 顯示記錄
+function displayLogs(attempts) {
+    const logsContent = document.getElementById('logs-content');
+    
+    if (attempts.length === 0) {
+        logsContent.innerHTML = '<p class="text-gray-500 text-sm">尚無記錄</p>';
+        return;
+    }
+    
+    const logsHtml = attempts.map(attempt => `
+        <div class="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+            <div class="flex items-center space-x-3">
+                <div class="flex-shrink-0">
+                    <svg class="h-4 w-4 ${attempt.success ? 'text-green-400' : 'text-red-400'}" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-900">${attempt.success ? '成功' : '失敗'}</p>
+                    <p class="text-xs text-gray-500">IP: ${attempt.ip_address}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-500">${new Date(attempt.attempt_time).toLocaleString('zh-TW')}</p>
+            </div>
+        </div>
+    `).join('');
+    
+    logsContent.innerHTML = logsHtml;
+}
+
+// 顯示備用碼
+async function showBackupCodes() {
+    try {
+        const response = await fetch('/api/2fa/backup-codes');
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const backupCodesList = document.getElementById('current-backup-codes-list');
+            backupCodesList.innerHTML = data.backup_codes.map(code => `<div>${code}</div>`).join('');
+            document.getElementById('current-backup-codes').classList.remove('hidden');
+        } else {
+            showError(data.message || '無法取得備用碼');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showError('取得備用碼時發生錯誤');
+    }
+}
+
+// 顯示成功訊息
+function showSuccess(message) {
+    // 這裡可以實作顯示成功訊息的邏輯
+    alert('成功：' + message);
+}
+
+// 顯示錯誤訊息
+function showError(message) {
+    // 這裡可以實作顯示錯誤訊息的邏輯
+    alert('錯誤：' + message);
+}
+</script>
+{% endblock %}
