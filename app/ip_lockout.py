@@ -6,7 +6,7 @@ class IPLockoutManager:
     def __init__(self, db_path="kao_power_water.db"):
         self.db_path = db_path
         self.max_attempts = 3  # 最大失敗次數
-        self.lockout_duration = 10  # 鎖定時間（分鐘）
+        self.lockout_duration = 1  # 鎖定時間（分鐘）
     
     def check_ip_lockout(self, ip_address):
         """檢查 IP 是否被鎖定"""
@@ -35,9 +35,9 @@ class IPLockoutManager:
             if locked_until:
                 locked_until_dt = datetime.fromisoformat(locked_until)
                 if datetime.now() > locked_until_dt:
-                    # 鎖定時間已過，解除鎖定
+                    # 鎖定時間已過，解除鎖定並重置失敗次數
                     self._unlock_ip(ip_address)
-                    return False, failed_attempts, None
+                    return False, 0, None  # 重置失敗次數為 0
             
             return True, failed_attempts, locked_until
             
@@ -259,9 +259,34 @@ class IPLockoutManager:
             result = cursor.fetchone()
             if result:
                 failed_attempts, is_locked, locked_until, last_failed_at = result
+                
+                # 檢查鎖定時間是否已過期
+                current_time = datetime.now()
+                is_still_locked = False
+                
+                if is_locked and locked_until:
+                    try:
+                        locked_until_dt = datetime.fromisoformat(locked_until)
+                        if current_time <= locked_until_dt:
+                            is_still_locked = True
+                        else:
+                            # 鎖定已過期，自動更新資料庫狀態
+                            cursor.execute("""
+                                UPDATE ip_lockouts 
+                                SET is_locked = 0, locked_until = NULL, failed_attempts = 0, updated_at = ?
+                                WHERE ip_address = ?
+                            """, (current_time.isoformat(), ip_address))
+                            conn.commit()
+                            is_still_locked = False
+                            failed_attempts = 0  # 重置失敗次數
+                    except:
+                        # 如果時間格式有問題，假設已過期
+                        is_still_locked = False
+                        failed_attempts = 0
+                
                 return {
                     'failed_attempts': failed_attempts,
-                    'is_locked': bool(is_locked),
+                    'is_locked': is_still_locked,
                     'locked_until': locked_until,
                     'last_failed_at': last_failed_at,
                     'remaining_attempts': max(0, self.max_attempts - failed_attempts)

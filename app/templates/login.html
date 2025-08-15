@@ -92,34 +92,60 @@
         const loading = document.getElementById('loading');
 
         let countdownTimer = null;
+        let statusCheckTimer = null; // 狀態檢查防抖計時器
 
         // 頁面載入時檢查 IP 鎖定狀態
         document.addEventListener('DOMContentLoaded', function() {
-            checkIPLockoutStatus();
+            // 延遲一下再檢查狀態，確保頁面完全載入
+            setTimeout(() => {
+                checkIPLockoutStatus();
+            }, 100);
         });
 
-        // 檢查 IP 鎖定狀態
+        // 檢查 IP 鎖定狀態（帶防抖）
         async function checkIPLockoutStatus() {
-            try {
-                const response = await fetch('/api/ip-lockout/status');
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    if (data.is_locked) {
-                        showIPLockout(data.locked_until);
-                    } else if (data.failed_attempts > 0) {
-                        showRemainingAttempts(data.remaining_attempts);
-                    }
-                }
-            } catch (error) {
-                console.error('Error checking IP lockout status:', error);
+            // 防抖處理，避免短時間內重複檢查
+            if (statusCheckTimer) {
+                clearTimeout(statusCheckTimer);
             }
+            
+            statusCheckTimer = setTimeout(async () => {
+                try {
+                    // 先隱藏所有元素，避免閃爍
+                    hideAllWarnings();
+                    
+                    const response = await fetch('/api/ip-lockout/status');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        // 根據狀態穩定地顯示對應的內容
+                        if (data.is_locked) {
+                            showIPLockout(data.locked_until);
+                        } else if (data.failed_attempts > 0) {
+                            showRemainingAttempts(data.remaining_attempts);
+                        } else {
+                            // 沒有鎖定且沒有失敗次數，顯示登入表單
+                            showLoginForm();
+                        }
+                    } else {
+                        // API 錯誤時顯示登入表單
+                        showLoginForm();
+                    }
+                } catch (error) {
+                    console.error('Error checking IP lockout status:', error);
+                    // 錯誤時顯示登入表單
+                    showLoginForm();
+                }
+            }, 100); // 100ms 防抖延遲
         }
 
         // 顯示 IP 鎖定警告
         function showIPLockout(lockedUntil) {
+            // 先隱藏所有元素
+            hideAllWarnings();
+            
+            // 穩定地顯示鎖定警告
             ipLockoutWarning.classList.remove('hidden');
-            remainingAttempts.classList.add('hidden');
             loginForm.classList.add('hidden');
             
             if (lockedUntil) {
@@ -129,9 +155,24 @@
 
         // 顯示剩餘嘗試次數
         function showRemainingAttempts(remaining) {
+            // 先隱藏所有元素
+            hideAllWarnings();
+            
+            // 穩定地顯示剩餘嘗試次數
             remainingAttempts.classList.remove('hidden');
-            ipLockoutWarning.classList.add('hidden');
             attemptsLeft.textContent = remaining;
+        }
+
+        // 隱藏所有警告
+        function hideAllWarnings() {
+            ipLockoutWarning.classList.add('hidden');
+            remainingAttempts.classList.add('hidden');
+        }
+
+        // 顯示登入表單
+        function showLoginForm() {
+            hideAllWarnings();
+            loginForm.classList.remove('hidden');
         }
 
         // 開始倒數計時
@@ -141,8 +182,21 @@
                 const timeLeft = Math.max(0, lockedUntil - now);
                 
                 if (timeLeft <= 0) {
-                    // 鎖定時間已過，重新載入頁面
-                    window.location.reload();
+                    // 鎖定時間已過，停止計時器
+                    if (countdownTimer) {
+                        clearInterval(countdownTimer);
+                        countdownTimer = null;
+                    }
+                    
+                    // 顯示解鎖訊息
+                    lockoutCountdown.textContent = "已解鎖";
+                    lockoutCountdown.className = "font-mono font-bold text-green-600";
+                    
+                    // 延遲一下再重新檢查狀態，避免閃爍
+                    setTimeout(() => {
+                        checkIPLockoutStatus();
+                    }, 500);
+                    
                     return;
                 }
                 
@@ -187,8 +241,10 @@
                     
                     // 檢查是否包含錯誤訊息
                     if (result.includes('帳號或密碼錯誤')) {
-                        // 重新檢查 IP 鎖定狀態
-                        await checkIPLockoutStatus();
+                        // 延遲一下再檢查 IP 鎖定狀態，避免閃爍
+                        setTimeout(() => {
+                            checkIPLockoutStatus();
+                        }, 300);
                     }
                     
                     // 重新載入頁面顯示錯誤訊息
