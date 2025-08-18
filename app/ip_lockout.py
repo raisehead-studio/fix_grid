@@ -6,7 +6,7 @@ class IPLockoutManager:
     def __init__(self, db_path="kao_power_water.db"):
         self.db_path = db_path
         self.max_attempts = 3  # 最大失敗次數
-        self.lockout_duration = 1  # 鎖定時間（分鐘）
+        self.lockout_duration = 10  # 鎖定時間（分鐘）
     
     def check_ip_lockout(self, ip_address):
         """檢查 IP 是否被鎖定"""
