@@ -344,7 +344,7 @@ async function fetchReports() {
       // 同步表體高度
       syncRowHeightsDelayed("#report-table-body tr", "#taipower-table-body tr");
       // 同步表頭高度
-      syncTheadHeightsDelayed(".col-span-4 table thead", ".col-span-2 table thead");
+      syncTheadHeightsDelayed(".col-span-3 table thead", ".col-span-2 table thead");
     });
   }, 0);
 }

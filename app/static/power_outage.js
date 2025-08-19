@@ -5,6 +5,8 @@ let taipowerStatusFilter = 'all';  // 'all' | 'restored' | 'unrestored'
 let isDeleteMode = false;          // 是否處於刪除模式
 let selectedItems = new Set();     // 選中的項目
 let currentDeleteId = null;        // 當前要刪除的項目 ID
+let selectedDistricts = new Set(); // 選中的行政區
+let selectedVillages = new Set();  // 選中的里
 
 // 檢查是否超過24小時且未復電
 function isOver24HoursAndUnrestored(createdAt, reportStatus) {
@@ -229,8 +231,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 const canViewStatus = userPermissions.includes("view_status");
-document.getElementById('filterDistrict').addEventListener('change', () => fetchReports());
-document.getElementById('filterVillage').addEventListener('change', () => fetchReports());
 if (canViewStatus) {
   document.getElementById('filterMismatch').addEventListener('change', () => fetchReports());
 }
@@ -253,15 +253,12 @@ async function fetchReports() {
   }
 
   // 取得排序與篩選設定
-  const selectedDistrict = document.getElementById('filterDistrict').value;
-  const selectedVillage = document.getElementById('filterVillage').value;
-
   // 篩選處理
-  if (selectedDistrict && selectedDistrict != "") {
-    data = data.filter(e => e.district_id == selectedDistrict);
+  if (selectedDistricts.size > 0) {
+    data = data.filter(e => selectedDistricts.has(e.district_id.toString()));
   }
-  if (selectedVillage && selectedVillage != "") {
-    data = data.filter(e => e.village_id == selectedVillage);
+  if (selectedVillages.size > 0) {
+    data = data.filter(e => selectedVillages.has(e.village_id.toString()));
   }
   if (canViewStatus) {
     const mismatchOnly = document.getElementById('filterMismatch').checked;
@@ -664,22 +661,162 @@ function closeConfirmStatusRestore() {
 
 window.onload = async () => {
   loadFilterDistricts()
+  
+  // 全域點擊事件：點擊其他地方關閉下拉選單
+  document.addEventListener('click', () => {
+    document.querySelectorAll('[id$="Dropdown"]').forEach(dropdown => {
+      dropdown.classList.add('hidden');
+    });
+  });
 }
 
 async function loadFilterDistricts() {
   const districts = await fetch('/api/districts').then(res => res.json());
-  const districtSelect = document.getElementById('filterDistrict');
-  districtSelect.innerHTML = `<option value="">全部</option>`
-  districts.forEach(d => districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`);
-  document.getElementById('filterDistrict').addEventListener('change', e => loadFilterVillages(e.target.value));
+  const districtCheckboxes = document.getElementById('districtCheckboxes');
+  districtCheckboxes.innerHTML = '';
+  
+  // 添加全選選項
+  const selectAllDiv = document.createElement('div');
+  selectAllDiv.className = 'flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors border-b border-gray-200';
+  selectAllDiv.innerHTML = `
+    <input type="checkbox" id="district_select_all" 
+           onchange="toggleAllDistricts()" 
+           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+    <label for="district_select_all" class="text-sm font-medium text-blue-600 cursor-pointer select-none">全選</label>
+  `;
+  districtCheckboxes.appendChild(selectAllDiv);
+  
+  districts.forEach(d => {
+    const checkboxDiv = document.createElement('div');
+    checkboxDiv.className = 'flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors';
+    checkboxDiv.innerHTML = `
+      <input type="checkbox" id="district_${d.id}" value="${d.id}" 
+             onchange="toggleDistrictFilter(${d.id})" 
+             class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+      <label for="district_${d.id}" class="text-sm whitespace-nowrap cursor-pointer select-none">${d.name}</label>
+    `;
+    districtCheckboxes.appendChild(checkboxDiv);
+  });
+  
+  // 設置下拉選單事件
+  setupDropdownEvents('district');
+  setupDropdownEvents('village');
 }
 
-async function loadFilterVillages(districtId) {
-  const res = await fetch(`/api/villages/${districtId}`);
-  const villages = await res.json();
-  const villageSelect = document.getElementById('filterVillage');
-  villageSelect.innerHTML = '<option value="">全部</option>';
-  villages.forEach(v => villageSelect.innerHTML += `<option value="${v.id}">${v.name}</option>`);
+async function loadFilterVillages() {
+  // 根據選中的行政區載入對應的里
+  if (selectedDistricts.size === 0) {
+    // 如果沒有選中任何行政區，清空里選項
+    renderVillageCheckboxes([]);
+  } else {
+    // 載入選中行政區的里
+    const villagePromises = Array.from(selectedDistricts).map(districtId => 
+      fetch(`/api/villages/${districtId}`).then(res => res.json())
+    );
+    const villageArrays = await Promise.all(villagePromises);
+    const allVillages = villageArrays.flat();
+    renderVillageCheckboxes(allVillages);
+  }
+}
+
+function renderVillageCheckboxes(villages) {
+  const villageCheckboxes = document.getElementById('villageCheckboxes');
+  villageCheckboxes.innerHTML = '';
+  
+  villages.forEach(v => {
+    const checkboxDiv = document.createElement('div');
+    checkboxDiv.className = 'flex items-center gap-2 p-2 hover:bg-blue-50 rounded cursor-pointer transition-colors';
+    checkboxDiv.innerHTML = `
+      <input type="checkbox" id="village_${v.id}" value="${v.id}" 
+             onchange="toggleVillageFilter(${v.id})" 
+             class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+      <label for="village_${v.id}" class="text-sm whitespace-nowrap cursor-pointer select-none">${v.name}</label>
+    `;
+    villageCheckboxes.appendChild(checkboxDiv);
+  });
+}
+
+// 切換行政區篩選
+function toggleDistrictFilter(districtId) {
+  const checkbox = document.getElementById(`district_${districtId}`);
+  if (checkbox.checked) {
+    selectedDistricts.add(districtId.toString());
+  } else {
+    selectedDistricts.delete(districtId.toString());
+  }
+  updateDropdownText('district');
+  // 重新載入里選項
+  loadFilterVillages();
+  fetchReports();
+}
+
+// 切換里篩選
+function toggleVillageFilter(villageId) {
+  const checkbox = document.getElementById(`village_${villageId}`);
+  if (checkbox.checked) {
+    selectedVillages.add(villageId.toString());
+  } else {
+    selectedVillages.delete(villageId.toString());
+  }
+  updateDropdownText('village');
+  fetchReports();
+}
+
+// 設置下拉選單事件
+function setupDropdownEvents(type) {
+  const btn = document.getElementById(`${type}DropdownBtn`);
+  const dropdown = document.getElementById(`${type}Dropdown`);
+  
+  // 點擊按鈕切換下拉選單
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('hidden');
+  });
+  
+  // 防止下拉選單內部點擊關閉
+  dropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+}
+
+// 更新下拉選單顯示文字
+function updateDropdownText(type) {
+  const textElement = document.getElementById(`${type}DropdownText`);
+  const selectedSet = type === 'district' ? selectedDistricts : selectedVillages;
+  
+  if (selectedSet.size === 0) {
+    textElement.textContent = `選擇${type === 'district' ? '行政區' : '里'}`;
+  } else if (selectedSet.size === 1) {
+    // 顯示單個選中的項目名稱
+    const id = Array.from(selectedSet)[0];
+    const checkbox = document.getElementById(`${type}_${id}`);
+    if (checkbox) {
+      const label = checkbox.nextElementSibling.textContent;
+      textElement.textContent = label;
+    }
+  } else {
+    // 顯示多個選中的項目數量
+    textElement.textContent = `已選擇 ${selectedSet.size} 個${type === 'district' ? '行政區' : '里'}`;
+  }
+}
+
+// 全選/取消全選行政區
+function toggleAllDistricts() {
+  const selectAllCheckbox = document.getElementById('district_select_all');
+  const districtCheckboxes = document.querySelectorAll('#districtCheckboxes input[type="checkbox"]:not(#district_select_all)');
+  
+  districtCheckboxes.forEach(checkbox => {
+    checkbox.checked = selectAllCheckbox.checked;
+    if (selectAllCheckbox.checked) {
+      selectedDistricts.add(checkbox.value);
+    } else {
+      selectedDistricts.delete(checkbox.value);
+    }
+  });
+  
+  updateDropdownText('district');
+  loadFilterVillages();
+  fetchReports();
 }
 
 function clearFilters() {
@@ -687,9 +824,19 @@ function clearFilters() {
   sortOrder = 'asc';
   reportStatusFilter = 'all';
   taipowerStatusFilter = 'all';
+  selectedDistricts.clear();
+  selectedVillages.clear();
   document.getElementById('filterBtnReportStatus').textContent = '❓';
-  document.getElementById('filterDistrict').value = '';
-  document.getElementById('filterVillage').innerHTML = '<option value="">全部</option>';
+  
+  // 清除所有行政區勾選框（包括全選）
+  document.querySelectorAll('#districtCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+  // 清除所有里勾選框
+  document.querySelectorAll('#villageCheckboxes input[type="checkbox"]').forEach(cb => cb.checked = false);
+  
+  // 更新下拉選單顯示文字
+  updateDropdownText('district');
+  updateDropdownText('village');
+  
   if (canViewStatus) {
     document.getElementById('filterMismatch').checked = false;
     document.getElementById('filterBtnTaipowerStatus').textContent = '❓';

@@ -54,15 +54,33 @@
 
   <div class="sticky top-[120px] z-30 bg-white flex flex-wrap gap-4 p-4 items-center border-b">
     <!-- 篩選 -->
-    <div>
-      <label class="font-medium mr-2">行政區：</label>
-      <select id="filterDistrict" class="border p-1 rounded">
-      </select>
+    <div class="flex items-center gap-2">
+      <label class="font-medium whitespace-nowrap">行政區：</label>
+      <div class="relative">
+        <button id="districtDropdownBtn" class="border p-1.5 rounded bg-white min-w-28 text-left flex justify-between items-center text-sm hover:bg-gray-50">
+          <span id="districtDropdownText">選擇行政區</span>
+          <span class="text-gray-500 text-xs ml-2">▼</span>
+        </button>
+        <div id="districtDropdown" class="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg z-50 max-h-60 overflow-y-auto hidden min-w-48">
+          <div id="districtCheckboxes" class="p-2">
+            <!-- 行政區選項將在這裡動態生成 -->
+          </div>
+        </div>
+      </div>
     </div>
-    <div>
-      <label class="font-medium mr-2">里：</label>
-      <select id="filterVillage" class="border p-1 rounded">
-      </select>
+    <div class="flex items-center gap-2">
+      <label class="font-medium whitespace-nowrap">里：</label>
+      <div class="relative">
+        <button id="villageDropdownBtn" class="border p-1.5 rounded bg-white min-w-28 text-left flex justify-between items-center text-sm hover:bg-gray-50">
+          <span id="villageDropdownText">選擇里</span>
+          <span class="text-gray-500 text-xs ml-2">▼</span>
+        </button>
+        <div id="villageDropdown" class="absolute top-full left-0 mt-1 bg-white border rounded shadow-lg z-50 max-h-60 overflow-y-auto hidden min-w-48">
+          <div id="villageCheckboxes" class="p-2">
+            <!-- 里選項將在這裡動態生成 -->
+          </div>
+        </div>
+      </div>
     </div>
     {% if 'view_status' in user_permissions %}
     <div>
