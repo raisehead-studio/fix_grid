@@ -119,8 +119,14 @@ def download_example():
 @disaster_bp.route("/api/taiwater_disasters/<int:disaster_id>", methods=["DELETE"])
 @login_required
 def delete_disaster(disaster_id):
+    conn = None
     try:
-        conn = sqlite3.connect("kao_power_water.db", timeout=10)
+        # 檢查資料庫檔案是否存在
+        db_path = "kao_power_water.db"
+        if not os.path.exists(db_path):
+            return jsonify(success=False, message="資料庫檔案不存在"), 500
+        
+        conn = sqlite3.connect(db_path, timeout=10)
         cursor = conn.cursor()
         
         # 先查詢檔案路徑
@@ -151,10 +157,20 @@ def delete_disaster(disaster_id):
                 # 檔案刪除失敗，記錄錯誤但不影響資料庫刪除
                 current_app.logger.warning(f"無法刪除檔案 {file_path}: {e}")
         
-        return jsonify(success=True)
+        return jsonify(success=True, message="刪除成功")
         
+    except sqlite3.OperationalError as e:
+        error_msg = f"資料庫操作錯誤: {str(e)}"
+        current_app.logger.error(error_msg)
+        return jsonify(success=False, message=error_msg), 500
+    except sqlite3.Error as e:
+        error_msg = f"資料庫錯誤: {str(e)}"
+        current_app.logger.error(error_msg)
+        return jsonify(success=False, message=error_msg), 500
     except Exception as e:
-        return jsonify(success=False, message=str(e)), 500
+        error_msg = f"系統錯誤: {str(e)}"
+        current_app.logger.error(error_msg)
+        return jsonify(success=False, message=error_msg), 500
     finally:
-        if 'conn' in locals():
+        if conn:
             conn.close()

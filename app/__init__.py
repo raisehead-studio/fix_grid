@@ -535,6 +535,31 @@ def create_app():
             from .utils import get_client_ip
             current_user.ip = get_client_ip(request)
 
+    # 全域錯誤處理器 - 確保所有錯誤都返回 JSON 格式
+    @app.errorhandler(400)
+    def bad_request(error):
+        return jsonify(success=False, message="請求格式錯誤"), 400
+
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return jsonify(success=False, message="未授權訪問"), 401
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        return jsonify(success=False, message="權限不足"), 403
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify(success=False, message="資源不存在"), 404
+
+    @app.errorhandler(500)
+    def internal_error(error):
+        return jsonify(success=False, message="伺服器內部錯誤"), 500
+
+    @app.errorhandler(Exception)
+    def handle_exception(error):
+        return jsonify(success=False, message=str(error)), 500
+
     return app
 
 if __name__ == "__main__":
