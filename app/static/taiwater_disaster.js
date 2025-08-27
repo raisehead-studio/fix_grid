@@ -273,7 +273,19 @@ function confirmDelete() {
   fetch(`/api/taiwater_disasters/${selectedId}`, {
     method: "DELETE",
   })
-    .then(res => res.json())
+    .then(res => {
+      console.log("Response status:", res.status);
+      console.log("Response headers:", res.headers);
+      return res.text().then(text => {
+        console.log("Response text:", text);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error("Failed to parse JSON:", e);
+          throw new Error("伺服器返回非 JSON 格式的資料");
+        }
+      });
+    })
     .then(data => {
       if (data.success) {
         closeDeleteModal();
