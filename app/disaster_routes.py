@@ -116,9 +116,15 @@ def download_example():
     file_path = os.path.join(current_app.root_path, "static", "sheet7.xlsx")
     return send_file(file_path, as_attachment=True)
 
-@disaster_bp.route("/api/taiwater_disasters/<int:disaster_id>", methods=["DELETE"])
+@disaster_bp.route("/api/taiwater_disasters/<int:disaster_id>", methods=["DELETE", "POST"])
 @login_required
 def delete_disaster(disaster_id):
+    # 如果是 POST 請求，檢查是否有 _method: DELETE 參數
+    if request.method == "POST":
+        data = request.get_json()
+        if not data or data.get("_method") != "DELETE":
+            return jsonify(success=False, message="無效的請求方法"), 400
+    
     conn = None
     try:
         # 檢查資料庫檔案是否存在

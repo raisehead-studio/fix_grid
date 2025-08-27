@@ -271,18 +271,32 @@ function confirmDelete() {
   if (!selectedId) return;
   
   fetch(`/api/taiwater_disasters/${selectedId}`, {
-    method: "DELETE",
+    method: "POST",
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _method: "DELETE" })
   })
     .then(res => {
       console.log("Response status:", res.status);
       console.log("Response headers:", res.headers);
       return res.text().then(text => {
         console.log("Response text:", text);
+        
+        // 檢查是否被防火牆阻擋
+        if (text.includes("Request Rejected") || text.includes("was rejected")) {
+          throw new Error("請求被網路防火牆阻擋，請聯繫系統管理員。Support ID: " + 
+            (text.match(/Your support ID is: (\d+)/) ? text.match(/Your support ID is: (\d+)/)[1] : "未知"));
+        }
+        
+        // 檢查是否返回 HTML 而不是 JSON
+        if (text.trim().startsWith('<html') || text.trim().startsWith('<!DOCTYPE')) {
+          throw new Error("伺服器返回了 HTML 頁面而不是 JSON 資料，可能是防火牆或代理伺服器問題");
+        }
+        
         try {
           return JSON.parse(text);
         } catch (e) {
           console.error("Failed to parse JSON:", e);
-          throw new Error("伺服器返回非 JSON 格式的資料");
+          throw new Error("伺服器返回非 JSON 格式的資料: " + text.substring(0, 100));
         }
       });
     })
